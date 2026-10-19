@@ -25,6 +25,15 @@
 - **Runtime-confirmed:** new localized definitions present `No trigger on probe after full movement` and `Move out of range`; the three build-plate previews and labels are redesigned/simplified. No GIF path was added: ten existing active GIFs reverted from one-frame replacements to 25–75-frame bytes already present in pre-update `.gif-backup-*`, while seven startup-removal GIFs remained single-frame.
 - **Unresolved:** the `.05` executable removes readable `lv_gif_set_src`, `gif_open`, and LVGL `gifdec` identifiers and most literal active-GIF paths. Runtime animation rendering and any qidiclient-side polar-cooler command issued during pause/resume are not established and do not gate installer compatibility.
 
+### Firmware `01.01.07.01`
+
+- **Config-confirmed:** `Qidi-Max4-Defaults` commit `a92b41236ea8942e12e748106393bb8b32f31c54` records archive `QD_MAX4_01.01.07.01_20261016_Release.zip` SHA-256 `0cc97445e77295116adaa665ff463e77608d4929520bd7cd46e732fbb0a6ecf2`, firmware-manifest SHA-256 `dc7355726be2741fd48c1aa8dcc43e53d33da48687ff8faef76365e31844c10b`, and SOC payload SHA-256 `668c65bf6a1f40252d81c93e6962fcd7e09b2486291ef7665d9c4aa22e108854`.
+- **Config-confirmed:** `config/printer.cfg` adds `[box485]` (USB-serial RS-485 bus at `115200` baud, dynamic Box addresses `1`–`127` with later addresses reserved for tool-rack and buffer devices, Hall trigger `2000`, and provisional `extrude_timeout`/`extrude_length`) and `[box2base]`. `homing.py` is byte-identical to `.06.05`.
+- **Config-confirmed:** `klipper/klippy/toolhead.py` adds `feed_move()` and `unload_move()`, which wait on remote Box feed/unload without advancing print time, poll Box online and error state every `0.5 s`, stop the Box on timeout, and report `QDE_004_042`, `_043`, `_055`, `_056`, or `_057`. A feed succeeds only when the toolhead filament sensor reports filament.
+- **Config-confirmed:** QIDI's `gcode.py` comments out the `Unknown command` response, so unregistered commands are silently ignored. `_CG28`, called by stock `CUT_FILAMENT_1`, has not been defined in any captured firmware.
+- **Runtime-confirmed:** after updating a printer with an optimized install to `.07.01`, live `printer.cfg` was byte-identical to the stock package and `config/tltg-optimized-macros/` was absent.
+- **Runtime-confirmed:** with no RS-485 adapter attached, `box485` logs that its serial device cannot be opened and then repeatedly logs `Can not find 485 device`; Klipper otherwise reaches ready.
+
 ## Rockchip first-boot service and root mount
 
 - `/proc/device-tree/compatible` on the observed Max 4 identifies RK3308, while `/etc/init.d/rockchip.sh` assigns `CHIPNAME="rk3208"` for that hardware.
