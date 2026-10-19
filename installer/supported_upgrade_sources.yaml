@@ -87,6 +87,9 @@ allowed_patch_targets:
 - file: config/printer.cfg
   section: heater_fan hotend_fan
   option: tachometer_poll_interval
+- file: config/klipper-macros-qd/filament.cfg
+  section: gcode_macro CUT_FILAMENT_1
+  option: __section__
 source_patches:
 - id: qidi_homing
   destination: klippy/extras/homing.py
@@ -106,5 +109,10 @@ source_patches:
 - id: qidi_homing
   destination: klippy/extras/homing.py
   firmware: 01.01.06.05
+  original_sha256: 0310d9ed0a838b2a7ecff8cd2ec15488b1ae3d8f165a458addd16d8366a60761
+  desired_sha256: 09a57808075b7022ad65619f5a23deeec80c5d682a43e8ee101f8d62c984f33a
+- id: qidi_homing
+  destination: klippy/extras/homing.py
+  firmware: 01.01.07.01
   original_sha256: 0310d9ed0a838b2a7ecff8cd2ec15488b1ae3d8f165a458addd16d8366a60761
   desired_sha256: 09a57808075b7022ad65619f5a23deeec80c5d682a43e8ee101f8d62c984f33a

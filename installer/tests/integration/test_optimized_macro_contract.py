@@ -146,8 +146,52 @@ class OptimizedMacroContractTests(unittest.TestCase):
         self.assertIn("M118 Filament detected", inserted)
 
         resume = self._macro_gcode("RESUME")
-        self.assertIn("TRY_RESUME_PRINT", resume)
-        self.assertIn("sensor.pause_enabled|int == 0 or printer['filament_switch_sensor filament_switch_sensor'].filament_detected == True", resume)
+        self.assert_ordered(
+            resume,
+            "{% if box_enabled %}",
+            "TRY_RESUME_PRINT",
+            "{% elif sensor.pause_enabled|int == 0 %}",
+            "RESUME_PRINT",
+            "{% elif vendor_flow %}",
+            "TRY_RESUME_PRINT",
+            "{% elif printer['filament_switch_sensor filament_switch_sensor'].filament_detected == True %}",
+            "RESUME_PRINT",
+            "M118 Please load filament",
+        )
+
+    def test_vendor_cut_macro_matches_newest_stock_without_exit_dwell(self):
+        stock = self._section_gcode(
+            REPO_ROOT
+            / "installer/stock/qidi-max4-defaults/firmwares/01.01.07.01/config/klipper-macros-qd/filament.cfg",
+            "gcode_macro CUT_FILAMENT_1",
+        )
+        optimized = self._macro_gcode("CUT_FILAMENT_1")
+        stock_lines = [line.rstrip() for line in stock.strip().splitlines()]
+        self.assertEqual(stock_lines[-1].strip(), "G4 P2000")
+        self.assertEqual([line.rstrip() for line in optimized.strip().splitlines()], stock_lines[:-1])
+
+    def test_slicer_filament_change_serves_both_box_command_surfaces(self):
+        for pack in ("orcaslicer_gcode", "qidistudio_gcode"):
+            with self.subTest(pack=pack):
+                text = (REPO_ROOT / pack / "change_filament.gcode").read_text(encoding="utf-8")
+                self.assert_ordered(
+                    text,
+                    "OPTIMIZED_CUT_FILAMENT TOOLCHANGE=1",
+                    "OPTIMIZED_MOVE_TO_TRASH",
+                    "UNLOAD_T[current_extruder]",
+                    "T[next_extruder]",
+                )
+
+    def test_box_availability_uses_one_transport_independent_definition(self):
+        predicate = (
+            '{% set box_available = printer["box_extras"] is defined or ("T_MANAGER" in printer.gcode.commands and '
+            "((printer.multi_color_controller|default({})).box_count|default(0)|int > 0 or "
+            "(printer.box485|default({})).box_count|default(0)|int > 0)) %}"
+        )
+        for path in sorted(OPTIMIZED_MACRO_ROOT.glob("*.cfg")):
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(path=path.name):
+                self.assertEqual(text.count('printer["box_extras"]'), text.count(predicate))
 
     def test_tool_mapping_lifecycle_preserves_active_prints_and_resets_idle_state(self):
         ensure = self._macro_gcode("_TLTG_ENSURE_TOOL_MAPPINGS")
@@ -344,13 +388,25 @@ class OptimizedMacroContractTests(unittest.TestCase):
     def test_public_motion_helpers_restore_modal_state_and_acceleration(self):
         cut_gcode = self._macro_gcode("OPTIMIZED_CUT_FILAMENT")
         self.assertIn("saved_accel = printer.toolhead.max_accel|float", cut_gcode)
+        self.assertNotIn("G4 P2000", cut_gcode)
+        self.assert_ordered(
+            cut_gcode,
+            'params.TOOLCHANGE|default(0)|int == 1 and "T_MANAGER" in printer.gcode.commands',
+            "{% if not vendor_flow_cuts %}",
+            "SET_STEPPER_ENABLE STEPPER=extruder enable=0",
+        )
         self.assert_ordered(
             cut_gcode,
             "SAVE_GCODE_STATE NAME=optimized_cut_filament_state",
             "G90",
             "M204 S10000",
+            "SET_STEPPER_ENABLE STEPPER=extruder enable=0",
+            "G4 P400",
+            "G1 X30 F15000",
+            "G1 X3 F20000",
             "M83",
-            "G1 E-4 F1000",
+            "G1 E-4 F1800",
+            "G1 X15 F8000",
             "SET_VELOCITY_LIMIT ACCEL={saved_accel}",
             "RESTORE_GCODE_STATE NAME=optimized_cut_filament_state",
         )
@@ -386,10 +442,14 @@ class OptimizedMacroContractTests(unittest.TestCase):
             "SAVE_GCODE_STATE NAME=optimized_unload_filament_state",
             "G90",
             "M83",
+            '{% if "T_MANAGER" in printer.gcode.commands %}',
+            "UNLOAD_FILAMENT T={T}",
+            "{% else %}",
             "CUT_FILAMENT T={T}",
             "OPTIMIZED_MOVE_TO_TRASH",
             "UNLOAD_T{T}",
             "G1 E25 F300",
+            "{% endif %}",
             "SET_VELOCITY_LIMIT ACCEL={saved_accel}",
             "RESTORE_GCODE_STATE NAME=optimized_unload_filament_state",
         )

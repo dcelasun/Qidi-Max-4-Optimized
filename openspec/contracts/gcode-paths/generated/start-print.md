@@ -252,7 +252,7 @@ Forbidden patterns:
 
 Condition: `all optimized starts`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:263-294`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:300-331`
 
 Direct visible macro calls in branch slice:
 
@@ -274,7 +274,7 @@ Forbidden patterns:
 
 Condition: `tltg_keep_loaded_between_prints == 1 and retained physical state is proven`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:295-332`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:332-369`
 
 Direct visible macro calls in branch slice:
 
@@ -322,7 +322,7 @@ Forbidden patterns:
 
 Condition: `box_enabled and retention is disabled or retained physical state is not proven`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:333-377`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:370-414`
 
 Direct visible macro calls in branch slice:
 
@@ -376,7 +376,7 @@ Forbidden patterns:
 
 Condition: `!box_available || !enable_box`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:378-412`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:415-449`
 
 Direct visible macro calls in branch slice:
 
@@ -468,7 +468,7 @@ Forbidden patterns:
 
 Condition: `fresh Box or external-spool start pre-scrape wipe with the nozzle already at the rear wiper`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:197-212`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:234-249`
 
 Direct visible macro calls in branch slice:
 
@@ -509,7 +509,7 @@ Forbidden patterns:
 
 Condition: `optimized cleanup with the nozzle already at the rear wiper`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:216-228`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:253-265`
 
 Direct visible macro calls in branch slice:
 
@@ -546,7 +546,7 @@ Forbidden patterns:
 
 Condition: `fresh Box or external-spool rear-bed scrape`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:166-193`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:203-230`
 
 Direct visible macro calls in branch slice:
 
@@ -584,7 +584,7 @@ Forbidden patterns:
 
 Condition: `external-spool start, with optional vendor chute cleanup guarded by Box object availability`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:243-259`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:280-296`
 
 Direct visible macro calls in branch slice:
 
@@ -598,7 +598,7 @@ Direct visible macro calls in branch slice:
 
 Ordered invariants:
 
-- `box_available = printer["box_extras"] is defined`
+- `box_available = printer["box_extras"] is defined or ("T_MANAGER" in printer.gcode.commands and ((printer.multi_color_controller|default({})).box_count|default(0)|int > 0 or (printer.box485|default({})).box_count|default(0)|int > 0))`
 - `OPTIMIZED_WAIT_HOTEND S={scrape_target} STATUS=clear_nozzle`
 - `TEMPERATURE_WAIT SENSOR={printer.toolhead.extruder} MAXIMUM={scrape_maximum}`
 - `{% if box_available %}`
@@ -620,7 +620,7 @@ Forbidden patterns:
 
 Condition: `fresh Box or external-spool scrape complete and vendor chute cleanup object available`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:232-238`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:269-275`
 
 Direct visible macro calls in branch slice:
 
@@ -645,7 +645,7 @@ Forbidden patterns:
 
 Condition: `PRE_SCRAPE=1 selects mixed-speed start wiping; omitted or zero retains fast non-start cleanup`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:558-605`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:597-644`
 
 Direct visible macro calls in branch slice:
 

@@ -13,6 +13,7 @@ from unittest import mock
 from installer.runtime import klipper_cfg
 from installer.runtime.box_enablement import (
     SavedVariablePersistenceError,
+    detect_box_enablement_opportunity,
     maybe_reconcile_tool_slots_after_box_count_change,
     maybe_write_required_tool_slot_variables,
     saved_variable_verify_marker_path,
@@ -242,6 +243,24 @@ class SourcePatchLifecycleMatrixTests(unittest.TestCase):
             paths=paths, reporter=reporter, urlopen=urlopen
         ))
         self.assertEqual(saved_variables_path.read_text(encoding="utf-8"), reconciled)
+
+    def test_flow_controller_box_detection_does_not_require_box_extras(self):
+        printer_root, paths, _ = self._fixture("01.01.07.01", source_variant="sync-reset")
+        (printer_root / "config/box.cfg").write_text("# [include box1.cfg]\n", encoding="utf-8")
+        saved_variables_path = printer_root / "config/saved_variables.cfg"
+        saved_variables_path.write_text("[Variables]\nbox_count = 1\nenable_box = 0\n", encoding="utf-8")
+        flow = {"T_MANAGER": {}}
+        cases = (
+            ("rs485_box", {"gcode": {"commands": flow}, "multi_color_controller": {"box_count": 0}, "box485": {"box_count": 1}}, True),
+            ("usb_box", {"gcode": {"commands": flow}, "multi_color_controller": {"box_count": 2}, "box485": {"box_count": 0}}, True),
+            ("no_box", {"gcode": {"commands": flow}, "multi_color_controller": {"box_count": 0}, "box485": {"box_count": 0}}, False),
+            ("legacy_without_flow", {"gcode": {"commands": {}}, "multi_color_controller": {"box_count": 2}}, False),
+        )
+        for name, box_status, available in cases:
+            with self.subTest(name=name):
+                urlopen = moonraker_urlopen(saved_variables_path=saved_variables_path, box_status=box_status)
+                opportunity = detect_box_enablement_opportunity(paths, urlopen=urlopen)
+                self.assertEqual(opportunity is not None, available)
 
     def test_missing_mapping_recheck_preserves_new_nonempty_choice(self):
         printer_root, paths, _ = self._fixture("01.01.06.03")
@@ -777,7 +796,7 @@ class SourcePatchLifecycleMatrixTests(unittest.TestCase):
         self.assertFalse(any(url.endswith(".tar.gz") for url in opened_urls))
 
     def test_enrolled_installation_health_detects_firmware_owned_drift(self):
-        firmware = "01.01.06.05"
+        firmware = "01.01.07.01"
         printer_root, paths, _ = self._fixture(
             firmware, source_variant="sync-reset"
         )
@@ -795,7 +814,7 @@ class SourcePatchLifecycleMatrixTests(unittest.TestCase):
         self.assertTrue(_installation_requires_reconciliation(paths))
 
     def test_enrolled_auto_update_recovers_after_firmware_config_cleanup(self):
-        firmware = "01.01.06.05"
+        firmware = "01.01.07.01"
         printer_root, installed_paths, _ = self._fixture(
             firmware, source_variant="sync-reset"
         )

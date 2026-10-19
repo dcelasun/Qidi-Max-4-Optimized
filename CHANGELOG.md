@@ -1,5 +1,13 @@
 # Changelog
 
+## 26.10.19.1
+- Added support for QIDI firmware `01.01.07.01`, including its stock configuration snapshot, guarded configuration targets, and the unchanged optimized homing payload. Firmware `01.01.06.03` through `01.01.06.05` remain supported.
+- Optimized macros and installer QIDI Box checks now recognize Boxes managed by the `01.01.07.01` flow controller, including RS-485 Boxes, as well as USB Boxes configured through `box.cfg`. Printers without an attached Box keep their non-Box paths.
+- Adopted QIDI's `01.01.07.01` filament-cut sequence: the extruder motor is released and allowed to settle before a faster cutter strike, and the 4 mm retraction follows the cut. The stock 2-second dwell after leaving the cutter remains removed, and it is now also removed from QIDI's own cut macro used by `01.01.07.01` tool changes and stock print-start and unload paths on all supported firmware.
+- On `01.01.07.01`, OrcaSlicer and QIDI Studio filament changes let QIDI's tool-change flow perform the single cut, unload, and load. The same slicer G-code still cuts and unloads on older firmware and with older installed macros.
+- On `01.01.07.01`, end-of-print and manual QIDI Box unloads use QIDI's `UNLOAD_FILAMENT`, so filament is cut and returned to the Box; older firmware keeps the existing unload sequence.
+- On `01.01.07.01`, Box resume and external-spool resume with automatic runout pausing enabled use QIDI's `TRY_RESUME_PRINT`. `TLTG_FILAMENT_SENSOR ENABLE=0` still resumes external-spool prints without a filament check; older firmware keeps its existing filament check.
+
 ## 26.09.15.1
 - Fixed installer QIDI Box tool-slot string quoting so missing mappings and approved mapping corrections save without Klipper literal-parsing errors, including when Box enablement is declined.
 - Fixed manual 3MF metadata rescans to use the archive extractor without deleting QIDI thumbnail files. Rescans join pending extraction instead of duplicating it; failures preserve prior metadata and return an error. The 3MF rescan path rejects escaped, reserved, or missing archives; ordinary G-code rescanning remains unchanged.
