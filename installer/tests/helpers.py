@@ -16,9 +16,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MOONRAKER_QUERY_URL = "http://moonraker.invalid/printer/objects/query?print_stats"
 _TEMP_ROOTS: list[Path] = []
 def homing_fixture_bytes(firmware: str) -> bytes:
-    if firmware not in {"01.01.06.03", "01.01.06.04", "01.01.06.05"}:
+    if firmware not in {"01.01.06.03", "01.01.06.04", "01.01.06.05", "01.01.07.01"}:
         raise ValueError(f"Unsupported homing fixture firmware: {firmware}")
-    if firmware == "01.01.06.05":
+    if firmware in {"01.01.06.05", "01.01.07.01"}:
         return homing_sync_reset_fixture_bytes()
     value = (REPO_ROOT / "installer/klipper/qidi/homing.py").read_bytes()
     value = value.replace(b"G4 P100", b"G4 P200").replace(b"G4 P50", b"G4 P200")
@@ -227,7 +227,11 @@ class _JsonResponse:
 
 
 def moonraker_urlopen(
-    state: str | None = "standby", *, raw_payload=None, saved_variables_path: Path | None = None
+    state: str | None = "standby",
+    *,
+    raw_payload=None,
+    saved_variables_path: Path | None = None,
+    box_status: dict | None = None,
 ):
     payload = raw_payload
     if payload is None:
@@ -278,6 +282,8 @@ def moonraker_urlopen(
         if "/printer/gcode/script" in url:
             persist_script(request)
             return _JsonResponse({"result": "ok"})
+        if box_status is not None and "printer/objects/query?gcode=commands" in url:
+            return _JsonResponse({"result": {"status": box_status}})
         if "printer/objects/query?save_variables" in url:
             return _JsonResponse({"result": {"status": {"save_variables": {"variables": saved_variables()}}}})
         if "/machine/services/restart" in url:

@@ -51,7 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     if not (bundle_root / "installer/system/qidiclient-static-gifs.tar.gz").exists():
         raise SystemExit("bundle smoke test is missing qidiclient static GIF archive")
     snapshot_base = bundle_root / "installer/stock/qidi-max4-defaults/firmwares"
-    for firmware in ("01.01.06.03", "01.01.06.04", "01.01.06.05"):
+    for firmware in ("01.01.06.03", "01.01.06.04", "01.01.06.05", "01.01.07.01"):
         snapshot_root = snapshot_base / firmware / "config"
         printer_config = snapshot_root / "printer.cfg"
         if not printer_config.exists():
@@ -78,6 +78,16 @@ def main(argv: list[str] | None = None) -> int:
     for expected in ("SET_KINEMATIC_POSITION Z=150", "G1 Z1 F600"):
         if expected not in firmware_05_qd_macro:
             raise SystemExit(f"bundle .05 stock qd_macro.cfg is missing {expected}")
+    firmware_0701_root = snapshot_base / "01.01.07.01" / "config"
+    firmware_0701_printer = (firmware_0701_root / "printer.cfg").read_text(encoding="utf-8")
+    for expected in ("[box485]", "[box2base]", "[multi_color_controller]"):
+        if expected not in firmware_0701_printer:
+            raise SystemExit(f"bundle 07.01 stock printer.cfg is missing {expected}")
+    firmware_0701_filament = (
+        firmware_0701_root / "klipper-macros-qd/filament.cfg"
+    ).read_text(encoding="utf-8")
+    if "T_MANAGER T=15" not in firmware_0701_filament:
+        raise SystemExit("bundle 07.01 stock filament.cfg is missing T_MANAGER tool macros")
     package_manifest = load_manifest(bundle_root / "installer/package.yaml")
     for patch in package_manifest.install.source_patches:
         for variant in patch.variants:

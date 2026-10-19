@@ -115,13 +115,24 @@ Optimized print start SHALL accept a chamber startup minimum independently of th
 - **AND** prior no-argument starts preserve their active-target heating behavior
 
 ### Requirement: Filament and QIDI Box state lifecycle
-Optimized macros SHALL keep external-spool runout policy independent from vendor Box recovery, retain filament only when the saved preference equals `1` and physical Box state is provable, and normalize tool mappings only at safe lifecycle boundaries.
+Optimized macros SHALL keep external-spool runout policy independent from vendor Box recovery, retain filament only when the saved preference equals `1` and physical Box state is provable, and normalize tool mappings only at safe lifecycle boundaries. Box-dependent behavior SHALL use one transport-independent Box-availability definition.
+
+#### Scenario: Box availability is transport-independent
+- **WHEN** a QIDI Box is attached through either the legacy USB configuration or the RS-485 Box stack
+- **THEN** optimized start, retention, unload, cleanup, runout, and resume paths take their Box branches
+- **AND** with no attached Box they take their non-Box branches even though firmware always loads Box controller objects
 
 #### Scenario: External runout pause is independently switchable
 - **WHEN** automatic external-spool pause is disabled
 - **THEN** sensor events and exhausted status remain visible while automatic external pause is suppressed
 - **AND** QIDI Box runout, reload, status, and resume remain vendor-controlled
 - **AND** the setting returns enabled after Klipper restart
+
+#### Scenario: Resume follows vendor recovery unless the operator overrides the sensor
+- **WHEN** a paused print is resumed
+- **THEN** an active Box print resumes through the vendor Box resume command
+- **AND** an external-spool print with automatic external pause disabled resumes without a filament-present gate
+- **AND** an external-spool print with automatic external pause enabled resumes only through a path that refuses to continue while the toolhead sensor reports no filament
 
 #### Scenario: Absent runtime preference disables retention
 - **WHEN** `tltg_keep_loaded_between_prints` is absent from Klipper saved variables or does not equal `1`
@@ -165,6 +176,18 @@ Optimized cut, purge, cooldown, cleaning, calibration, and cancellation helpers 
 - **THEN** motion modes, extrusion modes, and temporary acceleration are restored
 - **AND** optional Box objects are called only when available and valid
 - **AND** fixed waits are reduced without replacing required motion completion waits
+
+#### Scenario: Slicer filament change avoids a double cut on every firmware
+- **WHEN** an optimized slicer filament change runs
+- **THEN** exactly one cut occurs: the optimized cut when the vendor tool-change flow is absent, or the vendor flow's cut when it is present
+- **AND** the same slicer G-code remains correct with older installed optimized macros and with older supported firmware
+
+#### Scenario: Optimized cut keeps the vendor reliability sequence
+- **WHEN** the optimized filament cut or the stock-named cutter macro used by vendor flows runs
+- **THEN** the extruder stepper is released and allowed to settle before the cutter strike
+- **AND** the cutter approach, strike, and post-cut retraction match the newest supported stock cut sequence
+- **AND** only the stock idle dwell after the toolhead leaves the cutter is omitted
+- **AND** the stock-named cutter macro leaves the same modal state as stock for vendor callers
 
 #### Scenario: Pre-scrape wiping retains the cooldown stages
 - **WHEN** a fresh Box or external-spool start reaches an existing guarded pre-scrape chute wipe
@@ -233,6 +256,8 @@ Optimized configuration SHALL preserve firmware-scoped peripheral ownership, sto
 - **WHEN** optimized configuration is installed
 - **THEN** stock-named macros required by QIDI software remain available
 - **AND** the active vendor Box stack and vendor command names are not redefined
+- **AND** stock tool-selection macros and Box transport sections, including `T0`–`T15`, `[box485]`, and `[box2base]` where firmware provides them, are neither redefined nor retuned
+- **AND** optimized filament-change and unload paths invoke only commands the detected firmware registers
 - **AND** `config/fluidd.cfg` and unproven externally consumed stock globals remain unmodified
 
 ### Requirement: Optional staggered print-start heating

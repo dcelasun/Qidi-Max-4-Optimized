@@ -238,7 +238,7 @@ def maybe_reconcile_tool_slots_after_box_count_change(
         reporter.line(messages.REQUIRED_TOOL_SLOT_RECONCILE_SKIPPED_UNKNOWN_STATE)
         return False
 
-    if not _box_extras_configured(paths.config_root / "box.cfg"):
+    if not _box_stack_available(paths, urlopen=urlopen):
         reporter.debug(event="required_tool_slots.reconcile_skipped", reason="not_configured")
         return False
     box_count = _resolve_live_int(variables, "box_count", default=0)
@@ -325,7 +325,7 @@ def maybe_prompt_align_tool_slots(
 def detect_box_enablement_opportunity(
     paths: RuntimePaths, *, urlopen: UrlOpenFn = urllib.request.urlopen
 ) -> BoxEnablementOpportunity | None:
-    if not _box_extras_configured(paths.config_root / "box.cfg"):
+    if not _box_stack_available(paths, urlopen=urlopen):
         return None
     variables = read_live_saved_variables(paths, urlopen=urlopen)
     box_count_value = _resolve_live_int(variables, "box_count", default=0)
@@ -342,7 +342,7 @@ def detect_box_enablement_opportunity(
 def detect_required_tool_slot_opportunity(
     paths: RuntimePaths, *, urlopen: UrlOpenFn = urllib.request.urlopen
 ) -> RequiredToolSlotOpportunity | None:
-    if not _box_extras_configured(paths.config_root / "box.cfg"):
+    if not _box_stack_available(paths, urlopen=urlopen):
         return None
     variables = read_live_saved_variables(paths, urlopen=urlopen)
     box_count = _resolve_live_int(variables, "box_count", default=0)
@@ -536,6 +536,28 @@ def _box_extras_configured(path: Path) -> bool:
     try:
         return klipper_cfg.has_section(klipper_cfg.read_text(path), "box_extras")
     except OSError:
+        return False
+
+
+def _box_stack_available(paths: RuntimePaths, *, urlopen: UrlOpenFn) -> bool:
+    # Legacy USB Boxes are configured in box.cfg. The flow controller that
+    # registers T_MANAGER always loads its Box objects, so only a live Box count
+    # proves an attached Box there; this also covers RS-485 Boxes without box.cfg.
+    if _box_extras_configured(paths.config_root / "box.cfg"):
+        return True
+    request_url = _moonraker_objects_url(
+        paths.moonraker_url, "gcode=commands&multi_color_controller=box_count&box485=box_count"
+    )
+    try:
+        with urlopen(request_url, timeout=10) as response:
+            status = json.loads(response.read().decode("utf-8"))["result"]["status"]
+        if "T_MANAGER" not in status["gcode"]["commands"]:
+            return False
+        counts = (
+            status.get(name, {}).get("box_count", 0) for name in ("multi_color_controller", "box485")
+        )
+        return any((_coerce_optional_int(count) or 0) > 0 for count in counts)
+    except (OSError, urllib.error.URLError, KeyError, TypeError, ValueError, AttributeError, UnicodeDecodeError, json.JSONDecodeError):
         return False
 
 
