@@ -1,5 +1,8 @@
 # Changelog
 
+## 26.10.19.2
+- Optimized chute wipes now release waste with their own motion instead of QIDI's `CLEAR_FLUSH`, which QIDI's `01.01.07.01` tool-change flow no longer uses. After each wipe the toolhead still leaves the chute and re-enters it so the waste drops, now with the optimized trash approach speed and with motion settings restored afterward. Wipe patterns, cleanup stages, and temperature gates are unchanged, and QIDI's own Box tool-change cleanup is untouched.
+
 ## 26.10.19.1
 - Added support for QIDI firmware `01.01.07.01`, including its stock configuration snapshot, guarded configuration targets, and the unchanged optimized homing payload. Firmware `01.01.06.03` through `01.01.06.05` remain supported.
 - Optimized macros and installer QIDI Box checks now recognize Boxes managed by the `01.01.07.01` flow controller, including RS-485 Boxes, as well as USB Boxes configured through `box.cfg`. Printers without an attached Box keep their non-Box paths.

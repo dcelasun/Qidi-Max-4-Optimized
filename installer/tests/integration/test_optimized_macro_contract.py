@@ -557,11 +557,9 @@ class OptimizedMacroContractTests(unittest.TestCase):
         self.assert_ordered(
             staged_wipe,
             "TEMPERATURE_WAIT SENSOR={extruder} MAXIMUM={first_wipe_temp}",
-            "_OPTIMIZED_WIPE_NOZZLE",
-            "CLEAR_FLUSH",
+            "OPTIMIZED_WIPE_NOZZLE_DROP",
             "TEMPERATURE_WAIT SENSOR={extruder} MAXIMUM={final_wipe_temp}",
-            "_OPTIMIZED_WIPE_NOZZLE",
-            "CLEAR_FLUSH",
+            "OPTIMIZED_WIPE_NOZZLE_DROP",
             "G1 Y-{pull_forward_y} F6000",
         )
 
@@ -587,8 +585,7 @@ class OptimizedMacroContractTests(unittest.TestCase):
             "OPTIMIZED_WAIT_BED S={bed_target} STATUS=wait_bed_temp",
             "OPTIMIZED_WAIT_CHAMBER S={chamber_target} STATUS=wait_chamber_temp MINIMUM={params.CHAMBER_MIN_TEMP|default(0)|float}",
             "OPTIMIZED_WAIT_HOTEND S={reuse_nozzle_target} STATUS=clear_nozzle",
-            "_OPTIMIZED_WIPE_NOZZLE",
-            "CLEAR_FLUSH",
+            "OPTIMIZED_WIPE_NOZZLE_DROP",
             "Z_TILT_ADJUST",
         )
 
@@ -650,6 +647,17 @@ class OptimizedMacroContractTests(unittest.TestCase):
         )
         self.assertNotIn("_OPTIMIZED_START_PRE_SCRAPE_WIPE", fast_wipe)
 
+        # QIDI 01.01.07.01 flows no longer call the compiled chute cleanup commands, so the
+        # optimized package must not depend on them surviving future firmware.
+        for path in (
+            *sorted(OPTIMIZED_MACRO_ROOT.glob("*.cfg")),
+            *sorted((REPO_ROOT / "orcaslicer_gcode").glob("*.gcode")),
+            *sorted((REPO_ROOT / "qidistudio_gcode").glob("*.gcode")),
+        ):
+            text = path.read_text(encoding="utf-8")
+            for vendor_cleanup in ("CLEAR_FLUSH", "CLEAR_OOZE"):
+                self.assertNotIn(vendor_cleanup, text, path.name)
+
         scrape = self._macro_gcode("_OPTIMIZED_REAR_BED_SCRAPE")
         self.assertIn("saved_accel = printer.toolhead.max_accel|float", scrape)
         self.assert_ordered(
@@ -690,18 +698,18 @@ class OptimizedMacroContractTests(unittest.TestCase):
             "OPTIMIZED_EXTRUSION_AND_FLUSH PURGETEMP={purge_temp} CHAMBER={chamber_target} PRE_SCRAPE=1",
             "{% if purge_temp > scrape_target %}",
             "TEMPERATURE_WAIT SENSOR=extruder MAXIMUM={purge_temp}",
-            "_OPTIMIZED_START_PRE_SCRAPE_WIPE",
+            "OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED",
             "{% if purge_temp - 30 > scrape_target %}",
             "TEMPERATURE_WAIT SENSOR=extruder MAXIMUM={purge_temp - 30}",
-            "_OPTIMIZED_START_PRE_SCRAPE_WIPE",
+            "OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED",
             "TEMPERATURE_WAIT SENSOR=extruder MAXIMUM={scrape_maximum}",
-            "_OPTIMIZED_START_PRE_SCRAPE_WIPE",
+            "OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED",
             "_OPTIMIZED_REAR_BED_SCRAPE",
             "_OPTIMIZED_FINISH_START_SCRAPE",
             "OPTIMIZED_WAIT_BED S={bed_target} STATUS=wait_bed_temp",
             "Z_TILT_ADJUST",
         )
-        self.assertEqual(box_gcode.count("_OPTIMIZED_START_PRE_SCRAPE_WIPE"), 3)
+        self.assertEqual(box_gcode.count("OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED"), 3)
         self.assertEqual(box_gcode.count("{% if purge_temp > scrape_target %}"), 1)
         self.assertEqual(box_gcode.count("{% if purge_temp - 30 > scrape_target %}"), 1)
         self.assertNotIn("G1 E250", box_gcode)
@@ -711,9 +719,9 @@ class OptimizedMacroContractTests(unittest.TestCase):
                 "{% elif box_enabled %}"
             )
         ]
-        self.assertIn("_OPTIMIZED_WIPE_NOZZLE", retained_gcode)
+        self.assertIn("OPTIMIZED_WIPE_NOZZLE_DROP", retained_gcode)
         for forbidden in (
-            "_OPTIMIZED_START_PRE_SCRAPE_WIPE",
+            "PATTERN=MIXED",
             "_OPTIMIZED_REAR_BED_SCRAPE",
             "_OPTIMIZED_FINISH_START_SCRAPE",
         ):
@@ -724,11 +732,10 @@ class OptimizedMacroContractTests(unittest.TestCase):
         self.assert_ordered(
             purge,
             "{% if pre_scrape %}",
-            "_OPTIMIZED_START_PRE_SCRAPE_WIPE",
+            "OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED",
             "{% else %}",
-            "_OPTIMIZED_WIPE_NOZZLE",
+            "OPTIMIZED_WIPE_NOZZLE_DROP",
             "{% endif %}",
-            "CLEAR_FLUSH",
         )
         self.assertIn("G1 E10 F300", purge)
         self.assertIn("{% for i in range(1,3) %}", purge)
@@ -739,8 +746,8 @@ class OptimizedMacroContractTests(unittest.TestCase):
             "OPTIMIZED_END_STAGED_NOZZLE_WIPE",
         ):
             caller = self._macro_gcode(unchanged_caller)
-            self.assertIn("_OPTIMIZED_WIPE_NOZZLE", caller)
-            self.assertNotIn("_OPTIMIZED_START_PRE_SCRAPE_WIPE", caller)
+            self.assertIn("OPTIMIZED_WIPE_NOZZLE_DROP", caller)
+            self.assertNotIn("PATTERN=MIXED", caller)
         for slicer_change in (
             "orcaslicer_gcode/change_filament.gcode",
             "qidistudio_gcode/change_filament.gcode",
@@ -778,13 +785,12 @@ class OptimizedMacroContractTests(unittest.TestCase):
             "OPTIMIZED_WAIT_HOTEND S={scrape_target} STATUS=clear_nozzle",
             "TEMPERATURE_WAIT SENSOR={printer.toolhead.extruder} MAXIMUM={scrape_maximum}",
             "{% if box_available %}",
-            "_OPTIMIZED_START_PRE_SCRAPE_WIPE",
-            "CLEAR_FLUSH",
+            "OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED",
             "{% endif %}",
             "_OPTIMIZED_REAR_BED_SCRAPE",
             "_OPTIMIZED_FINISH_START_SCRAPE",
         )
-        self.assertNotIn("_OPTIMIZED_WIPE_NOZZLE", cleanup)
+        self.assertEqual(cleanup.count("OPTIMIZED_WIPE_NOZZLE_DROP"), 1)
 
         finish = self._macro_gcode("_OPTIMIZED_FINISH_START_SCRAPE")
         self.assert_ordered(
@@ -792,11 +798,11 @@ class OptimizedMacroContractTests(unittest.TestCase):
             'box_available = printer["box_extras"] is defined',
             "{% if box_available %}",
             "OPTIMIZED_MOVE_TO_TRASH",
-            "_OPTIMIZED_WIPE_NOZZLE",
-            "CLEAR_FLUSH",
+            "OPTIMIZED_WIPE_NOZZLE_DROP",
             "{% endif %}",
         )
-        self.assertEqual(finish.count("CLEAR_FLUSH"), 1)
+        self.assertEqual(finish.count("OPTIMIZED_WIPE_NOZZLE_DROP"), 1)
+        self.assertNotIn("PATTERN=MIXED", finish)
         self.assertNotIn("CLEAR_NOZZLE", finish)
         self.assertNotIn("CLEAR_OOZE", finish)
 
