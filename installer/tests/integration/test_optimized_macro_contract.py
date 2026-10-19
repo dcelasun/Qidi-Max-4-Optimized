@@ -176,7 +176,7 @@ class OptimizedMacroContractTests(unittest.TestCase):
                 text = (REPO_ROOT / pack / "change_filament.gcode").read_text(encoding="utf-8")
                 self.assert_ordered(
                     text,
-                    "OPTIMIZED_CUT_FILAMENT TOOLCHANGE=1",
+                    "OPTIMIZED_CUT_FILAMENT\n",
                     "OPTIMIZED_MOVE_TO_TRASH",
                     "UNLOAD_T[current_extruder]",
                     "T[next_extruder]",
@@ -391,9 +391,23 @@ class OptimizedMacroContractTests(unittest.TestCase):
         self.assertNotIn("G4 P2000", cut_gcode)
         self.assert_ordered(
             cut_gcode,
-            'params.TOOLCHANGE|default(0)|int == 1 and "T_MANAGER" in printer.gcode.commands',
+            'printer.print_stats.state == "printing" and "T_MANAGER" in printer.gcode.commands',
             "{% if not vendor_flow_cuts %}",
             "SET_STEPPER_ENABLE STEPPER=extruder enable=0",
+        )
+        self.assert_ordered(
+            cut_gcode,
+            "{% else %}",
+            "SET_GCODE_VARIABLE MACRO=OPTIMIZED_MOVE_TO_TRASH VARIABLE=vendor_cut_handoff_time VALUE={printer.toolhead.estimated_print_time}",
+        )
+        self.assert_ordered(
+            self._macro_gcode("OPTIMIZED_MOVE_TO_TRASH"),
+            "printer.toolhead.estimated_print_time - handoff < 2",
+            "SET_GCODE_VARIABLE MACRO=OPTIMIZED_MOVE_TO_TRASH VARIABLE=vendor_cut_handoff_time VALUE=-1.0",
+            "{% if not skip_for_vendor_flow %}",
+            "SAVE_GCODE_STATE NAME=optimized_move_to_trash_state",
+            "RESTORE_GCODE_STATE NAME=optimized_move_to_trash_state",
+            "{% endif %}",
         )
         self.assert_ordered(
             cut_gcode,

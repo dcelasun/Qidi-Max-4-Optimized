@@ -12,7 +12,9 @@ Optimized cut, purge, cooldown, cleaning, calibration, and cancellation helpers 
 #### Scenario: Slicer filament change avoids a double cut on every firmware
 - **WHEN** an optimized slicer filament change runs
 - **THEN** exactly one cut occurs: the optimized cut when the vendor tool-change flow is absent, or the vendor flow's cut when it is present
-- **AND** the same slicer G-code remains correct with older installed optimized macros and with older supported firmware
+- **AND** when the vendor flow is present, the toolhead goes from the print to the cutter without first visiting the chute; the vendor flow moves to the chute after cutting
+- **AND** the optimized macros recognize a slicer filament change from print state, so slicer G-code passes no tool-change parameter
+- **AND** the same slicer G-code remains correct with older supported firmware
 
 #### Scenario: Optimized cut keeps the vendor reliability sequence
 - **WHEN** the optimized filament cut or the stock-named cutter macro used by vendor flows runs
