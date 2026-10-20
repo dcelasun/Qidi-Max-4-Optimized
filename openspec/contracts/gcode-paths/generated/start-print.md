@@ -252,7 +252,7 @@ Forbidden patterns:
 
 Condition: `all optimized starts`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:300-331`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:323-354`
 
 Direct visible macro calls in branch slice:
 
@@ -274,7 +274,7 @@ Forbidden patterns:
 
 Condition: `tltg_keep_loaded_between_prints == 1 and retained physical state is proven`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:332-369`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:355-391`
 
 Direct visible macro calls in branch slice:
 
@@ -286,7 +286,7 @@ Direct visible macro calls in branch slice:
 - `OPTIMIZED_WAIT_CHAMBER`
 - `OPTIMIZED_WAIT_HOTEND`
 - `M106`
-- `_OPTIMIZED_WIPE_NOZZLE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `_OPTIMIZED_REPORT_BED_TEMP`
 - `_OPTIMIZED_PREPARE_PRINT_MESH`
 - `M1002`
@@ -299,8 +299,7 @@ Ordered invariants:
 - `OPTIMIZED_WAIT_BED S={bed_target} STATUS=wait_bed_temp`
 - `OPTIMIZED_WAIT_CHAMBER S={chamber_target} STATUS=wait_chamber_temp MINIMUM={params.CHAMBER_MIN_TEMP|default(0)|float}`
 - `OPTIMIZED_WAIT_HOTEND S={reuse_nozzle_target} STATUS=clear_nozzle`
-- `_OPTIMIZED_WIPE_NOZZLE`
-- `CLEAR_FLUSH`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `_OPTIMIZED_REPORT_BED_TEMP`
 - `Z_TILT_ADJUST`
 - `M400`
@@ -313,7 +312,7 @@ Forbidden patterns:
 - `BOX_PRINT_START`
 - `OPTIMIZED_EXTRUSION_AND_FLUSH`
 - `OPTIMIZED_WIPE_AND_SCRAPE_NOZZLE`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
+- `PATTERN=MIXED`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 - `_OPTIMIZED_FINISH_START_SCRAPE`
 - `CLEAR_NOZZLE`
@@ -322,14 +321,14 @@ Forbidden patterns:
 
 Condition: `box_enabled and retention is disabled or retained physical state is not proven`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:370-414`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:392-433`
 
 Direct visible macro calls in branch slice:
 
 - `OPTIMIZED_EXTRUSION_AND_FLUSH`
 - `OPTIMIZED_MOVE_TO_TRASH`
 - `m104`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 - `_OPTIMIZED_FINISH_START_SCRAPE`
 - `OPTIMIZED_WAIT_BED`
@@ -346,15 +345,12 @@ Ordered invariants:
 - `OPTIMIZED_EXTRUSION_AND_FLUSH PURGETEMP={purge_temp} CHAMBER={chamber_target} PRE_SCRAPE=1`
 - `{% if purge_temp > scrape_target %}`
 - `TEMPERATURE_WAIT SENSOR=extruder MAXIMUM={purge_temp}`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
-- `CLEAR_FLUSH`
+- `OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED`
 - `{% if purge_temp - 30 > scrape_target %}`
 - `TEMPERATURE_WAIT SENSOR=extruder MAXIMUM={purge_temp - 30}`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
-- `CLEAR_FLUSH`
+- `OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED`
 - `TEMPERATURE_WAIT SENSOR=extruder MAXIMUM={scrape_maximum}`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
-- `CLEAR_FLUSH`
+- `OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 - `_OPTIMIZED_FINISH_START_SCRAPE`
 - `OPTIMIZED_WAIT_BED S={bed_target} STATUS=wait_bed_temp`
@@ -376,7 +372,7 @@ Forbidden patterns:
 
 Condition: `!box_available || !enable_box`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:415-449`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:434-468`
 
 Direct visible macro calls in branch slice:
 
@@ -468,7 +464,7 @@ Forbidden patterns:
 
 Condition: `fresh Box or external-spool start pre-scrape wipe with the nozzle already at the rear wiper`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:234-249`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:236-251`
 
 Direct visible macro calls in branch slice:
 
@@ -509,7 +505,7 @@ Forbidden patterns:
 
 Condition: `optimized cleanup with the nozzle already at the rear wiper`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:253-265`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:255-267`
 
 Direct visible macro calls in branch slice:
 
@@ -542,11 +538,74 @@ Forbidden patterns:
 - `CLEAR_OOZE`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 
+### chute_wipe_and_drop_dispatch
+
+Condition: `PATTERN=MIXED selects the print-start pre-scrape wipe; omitted or other values select the fast silicone wipe; both release waste through the optimized chute drop`
+
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:284-290`
+
+Direct visible macro calls in branch slice:
+
+- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
+- `_OPTIMIZED_WIPE_NOZZLE`
+- `_OPTIMIZED_CHUTE_DROP`
+
+Ordered invariants:
+
+- `{% if params.PATTERN|default("FAST")|upper == "MIXED" %}`
+- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
+- `{% else %}`
+- `_OPTIMIZED_WIPE_NOZZLE`
+- `{% endif %}`
+- `_OPTIMIZED_CHUTE_DROP`
+
+Forbidden patterns:
+
+- `CLEAR_FLUSH`
+- `CLEAR_OOZE`
+- `CLEAR_NOZZLE`
+- `DROP_TRASH`
+- ` E`
+- `G4 `
+
+### chute_waste_release
+
+Condition: `nozzle at the rear wiper after an optimized wipe`
+
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:271-280`
+
+Direct visible macro calls in branch slice:
+
+- `save_gcode_state`
+- `OPTIMIZED_MOVE_TO_TRASH`
+- `restore_gcode_state`
+
+Ordered invariants:
+
+- `SAVE_GCODE_STATE NAME=optimized_chute_drop_state`
+- `G90`
+- `M204 S10000`
+- `G1 X180 F10000`
+- `OPTIMIZED_MOVE_TO_TRASH`
+- `SET_VELOCITY_LIMIT ACCEL={saved_accel}`
+- `RESTORE_GCODE_STATE NAME=optimized_chute_drop_state`
+
+Forbidden patterns:
+
+- `CLEAR_FLUSH`
+- `CLEAR_OOZE`
+- `DROP_TRASH`
+- ` E`
+- `G1 Z`
+- `G4 `
+- `M104`
+- `M109`
+
 ### rear_bed_scrape_motion
 
 Condition: `fresh Box or external-spool rear-bed scrape`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:203-230`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:205-232`
 
 Direct visible macro calls in branch slice:
 
@@ -584,7 +643,7 @@ Forbidden patterns:
 
 Condition: `external-spool start, with optional vendor chute cleanup guarded by Box object availability`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:280-296`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:304-319`
 
 Direct visible macro calls in branch slice:
 
@@ -592,7 +651,7 @@ Direct visible macro calls in branch slice:
 - `OPTIMIZED_MOVE_TO_TRASH`
 - `OPTIMIZED_WAIT_HOTEND`
 - `M106`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 - `_OPTIMIZED_FINISH_START_SCRAPE`
 
@@ -602,8 +661,7 @@ Ordered invariants:
 - `OPTIMIZED_WAIT_HOTEND S={scrape_target} STATUS=clear_nozzle`
 - `TEMPERATURE_WAIT SENSOR={printer.toolhead.extruder} MAXIMUM={scrape_maximum}`
 - `{% if box_available %}`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
-- `CLEAR_FLUSH`
+- `OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED`
 - `{% endif %}`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 - `_OPTIMIZED_FINISH_START_SCRAPE`
@@ -615,24 +673,24 @@ Forbidden patterns:
 - `_OPTIMIZED_WIPE_NOZZLE`
 - `G1 E`
 - `CLEAR_NOZZLE`
+- `CLEAR_FLUSH`
 
 ### post_scrape_chute_finish
 
 Condition: `fresh Box or external-spool scrape complete and vendor chute cleanup object available`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:269-275`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:294-299`
 
 Direct visible macro calls in branch slice:
 
 - `OPTIMIZED_MOVE_TO_TRASH`
-- `_OPTIMIZED_WIPE_NOZZLE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 
 Ordered invariants:
 
 - `{% if box_available %}`
 - `OPTIMIZED_MOVE_TO_TRASH`
-- `_OPTIMIZED_WIPE_NOZZLE`
-- `CLEAR_FLUSH`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `{% endif %}`
 
 Forbidden patterns:
@@ -640,12 +698,13 @@ Forbidden patterns:
 - `CLEAR_NOZZLE`
 - `CLEAR_OOZE`
 - `_OPTIMIZED_REAR_BED_SCRAPE`
+- `CLEAR_FLUSH`
 
 ### start_purge_wipe_dispatch
 
 Condition: `PRE_SCRAPE=1 selects mixed-speed start wiping; omitted or zero retains fast non-start cleanup`
 
-Source: `installer/klipper/tltg-optimized-macros/filament.cfg:597-644`
+Source: `installer/klipper/tltg-optimized-macros/filament.cfg:614-660`
 
 Direct visible macro calls in branch slice:
 
@@ -653,24 +712,23 @@ Direct visible macro calls in branch slice:
 - `OPTIMIZED_WAIT_HOTEND`
 - `M106`
 - `OPTIMIZED_M1004`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
-- `_OPTIMIZED_WIPE_NOZZLE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `pause`
 
 Ordered invariants:
 
 - `{% if pre_scrape %}`
-- `_OPTIMIZED_START_PRE_SCRAPE_WIPE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP PATTERN=MIXED`
 - `{% else %}`
-- `_OPTIMIZED_WIPE_NOZZLE`
+- `OPTIMIZED_WIPE_NOZZLE_DROP`
 - `{% endif %}`
-- `CLEAR_FLUSH`
 
 Forbidden patterns:
 
 - `_OPTIMIZED_REAR_BED_SCRAPE`
 - `_OPTIMIZED_FINISH_START_SCRAPE`
 - `CLEAR_NOZZLE`
+- `CLEAR_FLUSH`
 
 ## Macro scope
 

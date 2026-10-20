@@ -110,6 +110,9 @@ G1 E25 F300
 
 Recovered cutter strings include `CUT_FILAMENT_1`, `MOVE_TO_TRASH`, `M83`, and `G1 E-60 F300`. Exact cutter branching remains vendor-owned.
 
+- **Static-recovered (`.07.01`):** `CLEAR_FLUSH` and `CLEAR_OOZE` strings remain only in `box_extras.so`; `multi_color_controller.so` and `box2base.so` no longer contain them. The stock `filament.cfg` adds `DROP_TRASH` and `WIPE_NOZZLE_DROP` with identical bodies: `MOVE_TO_TRASH`, `M204 S5000`, the `CLEAR_OOZE` X145–X175 strokes with slower `F3000`/`F2000` passes, `G1 X180 F8000`, then `Y380`, `X116`, `G4 P2000`, `Y403 F3000`, and `MOVE_TO_TRASH`. Embedded script strings place `DROP_TRASH` after purge extrusion (`multi_color_controller.so`, `box_extras.so`, `box2base.so`) and `WIPE_NOZZLE_DROP` after unload and before the nozzle-cleaning completion message (`multi_color_controller.so`).
+- **Static-recovered (`.07.01`):** stock `filament.cfg` also adds `MOVE_ANOTHER_POINT_CHANGE_FILAMENT` (trash position, then `X30 Y125`) and `TRY_INTO_EXTRUDER` (fast XY strokes with `E3` extrusion near X30, containing `G1 P1000`, which Klipper's `G1` ignores). Only `box2base.so` references them; one recovered script string contains `CUT_FILAMENT_1`, `MOVE_TO_TRASH`, `MOVE_ANOTHER_POINT_CHANGE_FILAMENT`, `G1 E10 F300`, and `G1 E-80 F600` in that order.
+
 ## Autofeed and anti-wrap protocol
 
 Stock-visible `[box_autofeed]` values:
