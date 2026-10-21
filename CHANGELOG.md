@@ -1,5 +1,10 @@
 # Changelog
 
+## 26.10.21.2
+- Added a default-No interactive installer question for the Max 4 THR accelerometer FIFO firmware fix on QIDI `01.01.07.01`, plus explicit `--flash-thr-fifo` CLI authorization. `--yes` alone and automatic updates do not flash firmware, and permission is not retained for later runs. The prompt and README warn that input shaper calibration must be rerun after flashing.
+- The opt-in checks actual THR application and bootloader hashes, skips an already-patched board, preserves stock recovery files outside configuration, and verifies complete readback after flashing only THR. Unverified firmware work retains a recovery blocker without rolling back a verified configuration install; configuration restore and uninstall do not revert MCU firmware.
+- Included the hash-locked five-byte FIFO fix generator, restricted THR transfer tool, and recovery instructions in the installer bundle. The fix corrects the FIFO-empty decision without adding the separate batching change or changing QIDI's firmware version strings.
+
 ## 26.10.21.1
 - On firmware `01.01.07.01`, install and update add a `qidi_filament_config` folder to Fluidd's configuration files, including when optional OS optimizations are skipped. It opens the touchscreen's filament list (`filament-0.4.json` and the other nozzle sizes) so entries can be added or edited from Fluidd; restart the printer after saving so the touchscreen and Box pick up the change. Firmware updates replace these files and discard custom entries.
 - The folder is a link to QIDI's own files and is not included in installer configuration backups. An existing `qidi_filament_config` entry is left unchanged, and uninstall's system-restoration prompt removes only the installer's link.
