@@ -195,23 +195,31 @@ Normal install and update SHALL apply recognized Moonraker metadata optimization
 - **AND** accepted uninstall restoration reverts only the unchanged installed file; concurrent changes and operator drift are preserved
 
 ### Requirement: Recoverable Fluidd QIDI Box filament display
-Normal install and update SHALL patch the recognized QIDI Fluidd bundle so QIDI Box slots display filament IDs and colors saved by QIDI firmware `01.01.07.01`, independently of optional OS optimization policy, retaining the original bundle and preserving unrecognized or operator-modified bundles.
+Normal install and update SHALL patch the recognized QIDI Fluidd bundle so its QIDI Box card displays and edits slots the way QIDI firmware `01.01.07.01` stores and resolves them, independently of optional OS optimization policy, retaining the original bundle and preserving unrecognized or operator-modified bundles.
 
-#### Scenario: Firmware filament IDs and RGB colors display in Fluidd
-- **WHEN** a present QIDI Box slot stores a filament ID such as `QFA90` and a color such as `["228332"]`
-- **THEN** Fluidd shows the filament name and type from the firmware filament database and the saved RGB color instead of `?` and a transparent spool
+#### Scenario: Box slots show the firmware's resolved filament
+- **WHEN** Fluidd is connected to firmware that exposes `box485` and `multi_color_controller` slot information
+- **THEN** each Box slot and the rack show the filament name, vendor, and color the firmware resolved for that slot, including for saved IDs such as `QFA90`, RGB colors such as `["228332"]`, and stale numeric IDs
 - **AND** an unknown filament ID displays as its ID
-- **AND** legacy numeric filament and color IDs still resolve through `officiall_filas_list.cfg`
-- **AND** Fluidd's filament and color pickers and the values they save are unchanged
+
+#### Scenario: Box pickers save firmware filament IDs and RGB colors
+- **WHEN** an operator edits a slot in Fluidd on that firmware
+- **THEN** the vendor picker lists the firmware filament database vendors and the filament picker lists the selected vendor's filaments
+- **AND** choosing a filament saves its `QF` ID as a string, choosing a vendor saves that vendor's filament of the current type or its first filament, and choosing a color saves a one-element RGB list
+- **AND** `vendor_slotN` is not written
+
+#### Scenario: Earlier firmware keeps stock pickers
+- **WHEN** Fluidd is connected to firmware without `box485`
+- **THEN** slots display through `officiall_filas_list.cfg` and the stock pickers save numeric IDs as before
 
 #### Scenario: Unrecognized Fluidd bundles are preserved
-- **WHEN** the configured bundle is missing or does not match the reviewed slot-parsing and filament-list source
+- **WHEN** the configured bundle is missing or does not match the reviewed stock source or an earlier package patch of it
 - **THEN** the bundle is left unchanged and the outcome is recorded without failing other host patches
 
 #### Scenario: Fluidd deployment remains reversible
 - **WHEN** the recognized bundle requires the patch
 - **THEN** the installer backs up the original bytes and replaces the file atomically without restarting services
-- **AND** repeated reconciliation retains the first restore preimage
+- **AND** a bundle carrying an earlier package patch is updated in place while the first restore preimage is retained
 - **AND** accepted uninstall restoration reverts only the unchanged installed bundle; concurrent changes and operator drift are preserved
 
 ### Requirement: Safe unattended updates

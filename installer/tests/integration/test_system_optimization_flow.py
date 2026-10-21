@@ -10,6 +10,7 @@ from subprocess import CompletedProcess
 from unittest import mock
 
 from installer.runtime import system_optimizations
+from installer.runtime import fluidd_box_filaments as fluidd_patch
 from installer.runtime.fluidd_box_filaments import OPERATION as FLUIDD_BOX_OPERATION, PATCH_MARKER
 from installer.runtime.cli import resolve_runtime_paths
 from installer.runtime.compatibility import load_supported_upgrade_sources
@@ -127,14 +128,24 @@ class SystemOptimizationFlowTests(unittest.TestCase):
         self.assertEqual(moonraker.stat().st_mode & 0o777, 0o640)
         self.assertIn(FLUIDD_BOX_OPERATION, state.system_ledger["restore_preimages"])
         self.assertIn(PATCH_MARKER.encode(), fluidd.read_bytes())
+        fluidd_current = fluidd.read_bytes()
+        # Package 26.10.20.1 left an earlier owned Fluidd patch that updates must replace in place.
+        fluidd_previous = fluidd_before.decode().replace(fluidd_patch.SLOT_PARSE_STOCK, fluidd_patch.SLOT_PARSE_PATCHED).replace(
+            fluidd_patch.FILAS_LIST_STOCK, fluidd_patch._filas_list_patched_v1()
+        ).encode()
+        fluidd.write_bytes(fluidd_previous)
         prior_preimage = state.system_ledger["restore_preimages"][cache_id]
-        cache_policy = {**state.system_ledger, "policy": {"system_optimizations": "disabled", "ai_detection": "unset"}}
+        fluidd_preimage = state.system_ledger["restore_preimages"][FLUIDD_BOX_OPERATION]
+        cache_policy = copy.deepcopy({**state.system_ledger, "policy": {"system_optimizations": "disabled", "ai_detection": "unset"}})
+        cache_policy["outcomes"][FLUIDD_BOX_OPERATION]["postflight"]["sha256"] = __import__("hashlib").sha256(fluidd_previous).hexdigest()
         reconciled = apply_system_optimizations(
             paths=paths, spec=manifest.system_optimizations, ledger=cache_policy,
             reporter=PlainReporter(io.StringIO()), input_stream=None, environ=env,
             source="auto_update_reconcile", run=host_run,
         )
         self.assertEqual(reconciled["restore_preimages"][cache_id], prior_preimage)
+        self.assertEqual(fluidd.read_bytes(), fluidd_current)
+        self.assertEqual(reconciled["restore_preimages"][FLUIDD_BOX_OPERATION], fluidd_preimage)
         write_installed_state(printer_root / manifest.state_file, _replace_system_ledger(state, reconciled))
 
         run_uninstall(
