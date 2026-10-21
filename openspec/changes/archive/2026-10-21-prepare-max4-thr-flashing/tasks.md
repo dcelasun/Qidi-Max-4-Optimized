@@ -13,4 +13,3 @@
 ## 3. Hardware readiness
 
 - [x] 3.1 Confirm restored printer readiness, a non-erasing live bootloader handshake, and application return without changed flash bytes.
-- [ ] 3.2 Establish a board-specific recovery-entry procedure and audit all prerequisites before claiming flashing readiness; retain any unverified recovery dependency as a blocker.
