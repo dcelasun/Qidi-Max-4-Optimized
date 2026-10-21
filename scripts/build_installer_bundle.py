@@ -26,6 +26,10 @@ ALLOWED_FILES = [
     "installer/release/install.sh",
     "installer/release/restore.sh",
     "installer/release/auto-update.sh",
+    "scripts/flash_thr_firmware.py",
+    "scripts/build_thr_firmware.py",
+    "firmware/max4-thr-lis2dw-fifo-v1.json",
+    "firmware/FLASHING.md",
 ]
 ALLOWED_DIRECTORIES = [
     "LICENSES",

@@ -2,6 +2,7 @@
 /*.3mf
 /*.gcode
 .ruff_cache/
+.venv-thr/
 __pycache__/
 tmp/
 tltg-local/

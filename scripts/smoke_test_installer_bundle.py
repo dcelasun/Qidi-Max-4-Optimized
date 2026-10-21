@@ -121,6 +121,7 @@ def main(argv: list[str] | None = None) -> int:
         "--dry-run",
         "--demo-tui",
         "--yes",
+        "--flash-thr-fifo",
         "--skip-system-optimizations",
         "--disable-ai-detection",
         "--keep-ai-detection",
@@ -129,6 +130,12 @@ def main(argv: list[str] | None = None) -> int:
     ):
         if expected not in help_output.stdout:
             raise SystemExit(f"install.sh help output is missing {expected}")
+    for relative in ("scripts/flash_thr_firmware.py", "scripts/build_thr_firmware.py", "firmware/max4-thr-lis2dw-fifo-v1.json", "firmware/FLASHING.md"):
+        if not (bundle_root / relative).is_file():
+            raise SystemExit("bundle is missing THR firmware support: " + relative)
+    tool_help = run_command([sys.executable, str(bundle_root / "scripts/flash_thr_firmware.py"), "--help"], cwd=bundle_root, env=os.environ.copy())
+    if tool_help.returncode != 0:
+        raise SystemExit(tool_help.stdout + tool_help.stderr)
     version_output = run_command([str(bundle_root / "install.sh"), "-v"], cwd=bundle_root, env=os.environ.copy())
     if version_output.returncode != 0:
         raise SystemExit(version_output.stdout + version_output.stderr)
