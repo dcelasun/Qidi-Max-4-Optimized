@@ -9,64 +9,64 @@ from .errors import InstallerError
 OPERATION = "fluidd_box_filament_ids"
 PATCH_MARKER = "/*tltg-optimized:fluidd-box-filament-ids*/"
 
-# QIDI firmware 01.01.07.01 filament-0.4.json: ID, name, type, nozzle min/max, box min/max.
+# QIDI firmware 01.01.07.01 filament-0.4.json: ID, name, type, nozzle min/max, box min/max, vendor.
 QIDI_FILAMENTS = (
-    ("QFA00", "QIDI PLA Basic", "PLA", "190", "240", "0", "0"),
-    ("QFA01", "QIDI PLA Matte Basic", "PLA", "190", "240", "0", "0"),
-    ("QFA02", "QIDI PLA Rapido", "PLA", "190", "240", "0", "0"),
-    ("QFA03", "QIDI PLA Rapido Matte", "PLA", "190", "240", "0", "0"),
-    ("QFA04", "QIDI PLA Rapido Metal", "PLA", "190", "240", "0", "0"),
-    ("QFA05", "QIDI PLA Silk", "PLA", "190", "240", "0", "0"),
-    ("QFA16", "QIDI WOOD Rapido", "PLA", "190", "220", "0", "0"),
-    ("QFA50", "QIDI PLA-CF", "PLA-CF", "210", "250", "0", "0"),
-    ("QFB01", "QIDI ASA", "ASA", "240", "280", "0", "45"),
-    ("QFB02", "QIDI ASA-Aero", "ASA-AERO", "240", "280", "0", "45"),
-    ("QFB50", "QIDI ABS-GF", "ABS-GF", "240", "280", "0", "45"),
-    ("QFB51", "QIDI ASA-CF20 Core", "ASA-CF", "260", "280", "0", "45"),
-    ("QFB53", "QIDI ABS Odorless", "ABS", "240", "280", "0", "45"),
-    ("QFB54", "QIDI ABS Rapido", "ABS", "240", "280", "0", "45"),
-    ("QFB55", "QIDI ABS Rapido Metal", "ABS", "240", "280", "0", "45"),
-    ("QFC02", "QIDI PC/ABS-FR", "PC-ABS-FR", "240", "280", "0", "50"),
-    ("QFG00", "QIDI PETG Basic", "PETG", "240", "280", "0", "45"),
-    ("QFG02", "QIDI PETG Rapido", "PETG", "240", "275", "0", "45"),
-    ("QFG03", "QIDI PETG Tough", "PETG", "220", "270", "0", "45"),
-    ("QFG04", "QIDI PETG Translucent", "PETG", "240", "280", "0", "45"),
-    ("QFG50", "QIDI PETG-CF", "PETG-CF", "240", "270", "0", "45"),
-    ("QFG51", "QIDI PETG-GF", "PETG-GF", "240", "270", "0", "45"),
-    ("QFN04", "QIDI PAHT-CF", "PAHT-CF", "300", "320", "0", "65"),
-    ("QFN05", "QIDI PA6-CF", "PA6-CF", "280", "300", "0", "65"),
-    ("QFN12", "QIDI PA12-CF", "PA12-CF", "280", "300", "0", "65"),
-    ("QFN14", "QIDI PAHT-GF", "PAHT-GF", "300", "320", "0", "65"),
-    ("QFN20", "QIDI UltraPA", "UltraPA", "250", "290", "0", "55"),
-    ("QFN21", "QIDI UltraPA-CF25", "UltraPA-CF25", "300", "320", "0", "65"),
-    ("QFP01", "QIDI PPS-CF", "PPS-CF", "300", "350", "0", "65"),
-    ("QFP02", "QIDI PPS-GF", "PPS-GF", "300", "350", "0", "65"),
-    ("QFS01", "QIDI Support For PET/PA", "PA-S", "260", "280", "0", "65"),
-    ("QFS03", "QIDI Support For PAHT", "PAHT-S", "260", "280", "0", "65"),
-    ("QFT01", "QIDI PET-CF", "PET-CF", "280", "320", "0", "65"),
-    ("QFT02", "QIDI PET-GF", "PET-GF", "280", "320", "0", "50"),
-    ("QFU00", "QIDI TPU-Aero", "TPU-AERO", "230", "270", "0", "0"),
-    ("QFU01", "QIDI TPU 95A-HF", "TPU", "200", "250", "0", "0"),
-    ("QFU02", "QIDI TPU-GF", "TPU-GF", "240", "270", "0", "0"),
-    ("QFU03", "QIDI PEBA 95A", "PEBA", "230", "260", "0", "0"),
-    ("QFB91", "Generic ABS", "ABS", "240", "280", "0", "45"),
-    ("QFC90", "Generic PC", "PC", "260", "290", "0", "65"),
-    ("QFG90", "Generic PETG", "PETG", "220", "270", "0", "45"),
-    ("QFA90", "Generic PLA", "PLA", "190", "240", "0", "0"),
-    ("QFA92", "Generic PLA Silk", "PLA", "190", "240", "0", "0"),
-    ("QFA91", "Generic PLA+", "PLA", "190", "240", "0", "0"),
-    ("QFU91", "Generic TPU 95A", "TPU", "200", "250", "0", "0"),
-    ("QFL32", "Bambu ABS", "ABS", "240", "280", "0", "45"),
-    ("QFL31", "Bambu PETG", "PETG", "220", "270", "0", "45"),
-    ("QFL30", "Bambu PLA", "PLA", "190", "240", "0", "0"),
-    ("QFL12", "HATCHBOX ABS", "ABS", "240", "280", "0", "45"),
-    ("QFL11", "HATCHBOX PETG", "PETG", "220", "270", "0", "45"),
-    ("QFL10", "HATCHBOX PLA", "PLA", "190", "240", "0", "0"),
-    ("QFL62", "Overture ABS", "ABS", "240", "280", "0", "45"),
-    ("QFL60", "Overture PLA", "PLA", "190", "240", "0", "45"),
-    ("QFL22", "Polymaker ABS", "ABS", "240", "280", "0", "45"),
-    ("QFL20", "Polymaker PLA", "PLA", "190", "240", "0", "0"),
-    ("QFL24", "Polymaker PLA-HT", "PLA", "190", "240", "0", "0"),
+    ("QFA00", "QIDI PLA Basic", "PLA", "190", "240", "0", "0", "QIDI"),
+    ("QFA01", "QIDI PLA Matte Basic", "PLA", "190", "240", "0", "0", "QIDI"),
+    ("QFA02", "QIDI PLA Rapido", "PLA", "190", "240", "0", "0", "QIDI"),
+    ("QFA03", "QIDI PLA Rapido Matte", "PLA", "190", "240", "0", "0", "QIDI"),
+    ("QFA04", "QIDI PLA Rapido Metal", "PLA", "190", "240", "0", "0", "QIDI"),
+    ("QFA05", "QIDI PLA Silk", "PLA", "190", "240", "0", "0", "QIDI"),
+    ("QFA16", "QIDI WOOD Rapido", "PLA", "190", "220", "0", "0", "QIDI"),
+    ("QFA50", "QIDI PLA-CF", "PLA-CF", "210", "250", "0", "0", "QIDI"),
+    ("QFB01", "QIDI ASA", "ASA", "240", "280", "0", "45", "QIDI"),
+    ("QFB02", "QIDI ASA-Aero", "ASA-AERO", "240", "280", "0", "45", "QIDI"),
+    ("QFB50", "QIDI ABS-GF", "ABS-GF", "240", "280", "0", "45", "QIDI"),
+    ("QFB51", "QIDI ASA-CF20 Core", "ASA-CF", "260", "280", "0", "45", "QIDI"),
+    ("QFB53", "QIDI ABS Odorless", "ABS", "240", "280", "0", "45", "QIDI"),
+    ("QFB54", "QIDI ABS Rapido", "ABS", "240", "280", "0", "45", "QIDI"),
+    ("QFB55", "QIDI ABS Rapido Metal", "ABS", "240", "280", "0", "45", "QIDI"),
+    ("QFC02", "QIDI PC/ABS-FR", "PC-ABS-FR", "240", "280", "0", "50", "QIDI"),
+    ("QFG00", "QIDI PETG Basic", "PETG", "240", "280", "0", "45", "QIDI"),
+    ("QFG02", "QIDI PETG Rapido", "PETG", "240", "275", "0", "45", "QIDI"),
+    ("QFG03", "QIDI PETG Tough", "PETG", "220", "270", "0", "45", "QIDI"),
+    ("QFG04", "QIDI PETG Translucent", "PETG", "240", "280", "0", "45", "QIDI"),
+    ("QFG50", "QIDI PETG-CF", "PETG-CF", "240", "270", "0", "45", "QIDI"),
+    ("QFG51", "QIDI PETG-GF", "PETG-GF", "240", "270", "0", "45", "QIDI"),
+    ("QFN04", "QIDI PAHT-CF", "PAHT-CF", "300", "320", "0", "65", "QIDI"),
+    ("QFN05", "QIDI PA6-CF", "PA6-CF", "280", "300", "0", "65", "QIDI"),
+    ("QFN12", "QIDI PA12-CF", "PA12-CF", "280", "300", "0", "65", "QIDI"),
+    ("QFN14", "QIDI PAHT-GF", "PAHT-GF", "300", "320", "0", "65", "QIDI"),
+    ("QFN20", "QIDI UltraPA", "UltraPA", "250", "290", "0", "55", "QIDI"),
+    ("QFN21", "QIDI UltraPA-CF25", "UltraPA-CF25", "300", "320", "0", "65", "QIDI"),
+    ("QFP01", "QIDI PPS-CF", "PPS-CF", "300", "350", "0", "65", "QIDI"),
+    ("QFP02", "QIDI PPS-GF", "PPS-GF", "300", "350", "0", "65", "QIDI"),
+    ("QFS01", "QIDI Support For PET/PA", "PA-S", "260", "280", "0", "65", "QIDI"),
+    ("QFS03", "QIDI Support For PAHT", "PAHT-S", "260", "280", "0", "65", "QIDI"),
+    ("QFT01", "QIDI PET-CF", "PET-CF", "280", "320", "0", "65", "QIDI"),
+    ("QFT02", "QIDI PET-GF", "PET-GF", "280", "320", "0", "50", "QIDI"),
+    ("QFU00", "QIDI TPU-Aero", "TPU-AERO", "230", "270", "0", "0", "QIDI"),
+    ("QFU01", "QIDI TPU 95A-HF", "TPU", "200", "250", "0", "0", "QIDI"),
+    ("QFU02", "QIDI TPU-GF", "TPU-GF", "240", "270", "0", "0", "QIDI"),
+    ("QFU03", "QIDI PEBA 95A", "PEBA", "230", "260", "0", "0", "QIDI"),
+    ("QFB91", "Generic ABS", "ABS", "240", "280", "0", "45", "Generic"),
+    ("QFC90", "Generic PC", "PC", "260", "290", "0", "65", "Generic"),
+    ("QFG90", "Generic PETG", "PETG", "220", "270", "0", "45", "Generic"),
+    ("QFA90", "Generic PLA", "PLA", "190", "240", "0", "0", "Generic"),
+    ("QFA92", "Generic PLA Silk", "PLA", "190", "240", "0", "0", "Generic"),
+    ("QFA91", "Generic PLA+", "PLA", "190", "240", "0", "0", "Generic"),
+    ("QFU91", "Generic TPU 95A", "TPU", "200", "250", "0", "0", "Generic"),
+    ("QFL32", "Bambu ABS", "ABS", "240", "280", "0", "45", "Bambu"),
+    ("QFL31", "Bambu PETG", "PETG", "220", "270", "0", "45", "Bambu"),
+    ("QFL30", "Bambu PLA", "PLA", "190", "240", "0", "0", "Bambu"),
+    ("QFL12", "HATCHBOX ABS", "ABS", "240", "280", "0", "45", "HATCHBOX"),
+    ("QFL11", "HATCHBOX PETG", "PETG", "220", "270", "0", "45", "HATCHBOX"),
+    ("QFL10", "HATCHBOX PLA", "PLA", "190", "240", "0", "0", "HATCHBOX"),
+    ("QFL62", "Overture ABS", "ABS", "240", "280", "0", "45", "Overture"),
+    ("QFL60", "Overture PLA", "PLA", "190", "240", "0", "45", "Overture"),
+    ("QFL22", "Polymaker ABS", "ABS", "240", "280", "0", "45", "Polymaker"),
+    ("QFL20", "Polymaker PLA", "PLA", "190", "240", "0", "0", "Polymaker"),
+    ("QFL24", "Polymaker PLA-HT", "PLA", "190", "240", "0", "0", "Polymaker"),
 )
 
 SLOT_PARSE_STOCK = (
@@ -80,16 +80,46 @@ SLOT_PARSE_PATCHED = (
     'else if(g.startsWith("filament_slot")){const v=parseInt(g.replace("filament_slot",""),10);'
     'n[v]=typeof e[g]=="string"&&/^[A-Z]+[0-9]+$/.test(e[g])?e[g]:parseInt(e[g]??"0",10)}'
 )
+
+VARIABLES_RETURN_STOCK = (
+    'return a[16]=1,{boxCount:t,colorSlot:s,filamentSlot:n,vendorSlot:i,slot:a,valueSlot:o,slotSync:l,rackExtra:c,lastLoadSlot:u}'
+)
+# 01.01.07.01 resolves every saved slot, including stale numeric IDs, through multi_color_controller; show that view.
+VARIABLES_RETURN_PATCHED = (
+    '{const x=r==null?void 0:r.printer,y=x&&x.box485&&x.multi_color_controller,b=y&&y.box;'
+    'if(b){const w=(k,f)=>{const d=k[f+"filament_id"];if(typeof d!="string"||!d)return null;'
+    'const h=k[f+"color_rgb_str"],z=Array.isArray(h)?h[0]:h;'
+    'return[d,typeof z=="string"?z.replace("#","").toUpperCase():null,k[f+"vendor_str"]]};'
+    'for(let g=0;g<16;g++){const z=w(b,`box${g>>2}_filament_info_${g&3}_`);z&&(n[g]=z[0],z[1]&&(s[g]=z[1]),z[2]&&(i[g]=z[2]))}'
+    'const f=y.extra&&y.extra.filament_info,z=f&&w(f,"");z&&(c[1]=z[0],z[1]&&(c[0]=z[1]),z[2]&&(c[2]=z[2]))}}'
+    + VARIABLES_RETURN_STOCK
+)
+
+SOCKET_NOTIFY_STOCK = (
+    'Object.keys(e.payload).forEach(s=>{t[s]!==e.payload[s]&&$.set(r.printer[e.key],s,e.payload[s])})'
+)
+# multi_color_controller publishes partial nested updates; merge them so per-slot info is retained.
+SOCKET_NOTIFY_PATCHED = (
+    'Object.keys(e.payload).forEach(s=>{const v=e.payload[s],o=t[s];t[s]!==v&&$.set(r.printer[e.key],s,'
+    'e.key==="multi_color_controller"&&o&&v&&typeof o=="object"&&typeof v=="object"&&!Array.isArray(v)?{...o,...v}:v)})'
+)
+
 FILAS_LIST_STOCK = 'setOfficiallFilasList(r,e){$.set(r,"officiallFilasList",e)}'
 
 
-def _filas_list_patched() -> str:
-    table = ",".join(f"{item[0]}:{json.dumps(list(item[1:]), ensure_ascii=False, separators=(',', ':'))}" for item in QIDI_FILAMENTS)
-    # Proxies resolve new IDs without adding entries to the stock filament picker.
+def _filas_table(columns: int) -> str:
+    return ",".join(
+        f"{item[0]}:{json.dumps(list(item[1:columns + 1]), ensure_ascii=False, separators=(',', ':'))}"
+        for item in QIDI_FILAMENTS
+    )
+
+
+def _filas_list_patched_v1() -> str:
+    # Package 26.10.20.1 output; recognized only so updates can replace it.
     return (
         'setOfficiallFilasList(r,e){$.set(r,"officiallFilasList",' + PATCH_MARKER + '(d=>{'
         'if(!d||typeof d!="object")return d;'
-        'const q={' + table + '},c=d.colordict;'
+        'const q={' + _filas_table(6) + '},c=d.colordict;'
         'c&&typeof c=="object"&&(d.colordict=new Proxy(c,{get(t,k,p){'
         'if(typeof k!="string"||k in t)return Reflect.get(t,k,p);'
         'const h=k.split(",")[0].replace(/^#/,"");'
@@ -103,19 +133,121 @@ def _filas_list_patched() -> str:
     )
 
 
+def _filas_list_patched() -> str:
+    # Proxies resolve new IDs and vendors without adding entries to the stock legacy picker.
+    return (
+        'setOfficiallFilasList(r,e){$.set(r,"officiallFilasList",' + PATCH_MARKER + '(d=>{'
+        'if(!d||typeof d!="object")return d;'
+        'const q={' + _filas_table(7) + '},c=d.colordict,w=d.vendor_list,'
+        'n=new Set(Object.values(q).map(f=>f[6]));let l;'
+        'c&&typeof c=="object"&&(d.colordict=new Proxy(c,{get(t,k,p){'
+        'if(typeof k!="string"||k in t)return Reflect.get(t,k,p);'
+        'const h=k.split(",")[0].replace(/^#/,"");'
+        'return/^[0-9A-Fa-f]{6}$/.test(h)?"#"+h.toUpperCase():void 0}}));'
+        'w&&typeof w=="object"&&(d.vendor_list=new Proxy(w,{get(t,k,p){'
+        'return typeof k=="string"&&!(k in t)&&n.has(k)?k:Reflect.get(t,k,p)}}));'
+        'return new Proxy(d,{get(t,k,p){'
+        'if(k==="tltgFilaments"&&!(k in t))return l||(l=Object.entries(q).map(([i,f])=>({id:i,name:f[0],type:f[1],vendor:f[6]})));'
+        'const m=typeof k=="string"&&!(k in t)&&/^fila([A-Z]+[0-9]+)$/.exec(k);'
+        'if(!m)return Reflect.get(t,k,p);'
+        'const f=q[m[1]];'
+        'return f?{filament:f[0],type:f[1],min_temp:f[2],max_temp:f[3],box_min_temp:f[4],box_max_temp:f[5]}:{filament:m[1],type:""}}})'
+        '})(e))}'
+    )
+
+
+# Box card pickers. On 01.01.07.01 (box485 present) they offer the firmware filament database and save
+# the touchscreen formats; otherwise the stock legacy pickers run unchanged.
+FILAMENT_ITEMS_STOCK = (
+    'get filamentItems(){const t=new Set;if(!this.officialFilasListDictData)return[""];'
+    'for(const s in this.officialFilasListDictData)s.startsWith("fila")&&t.add(this.officialFilasListDictData[s].filament);'
+    'return Array.from(t)}'
+)
+FILAMENT_ITEMS_PATCHED = (
+    'get tltgCatalog(){const p=this.$store.state.printer.printer,d=this.officialFilasListDictData;'
+    'return p&&p.box485&&d&&d.tltgFilaments||null}'
+    'tltgSaveFilament(t){I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=filament_slot${this.selectIndex} VALUE=\'"${t}"\'`)}'
+    'get filamentItems(){const q=this.tltgCatalog;if(q){const v=this.selectedVendor,f=q.filter(x=>x.vendor===v);'
+    'return(f.length?f:q).map(x=>x.name)}'
+    + FILAMENT_ITEMS_STOCK.removeprefix('get filamentItems(){')
+)
+VENDOR_ITEMS_STOCK = (
+    'get vendorItems(){const t=new Set;if(!this.officialFilasListDictData)return[""];'
+    'for(const s in this.officialFilasListDictData.vendor_list)t.add(this.officialFilasListDictData.vendor_list[s]);'
+    'return Array.from(t)}'
+)
+VENDOR_ITEMS_PATCHED = (
+    'get vendorItems(){const q=this.tltgCatalog;if(q)return Array.from(new Set(q.map(x=>x.vendor)));'
+    + VENDOR_ITEMS_STOCK.removeprefix('get vendorItems(){')
+)
+SELECTED_VENDOR_STOCK = (
+    'set selectedVendor(t){const s=this.getKeyByValue(this.officialFilasListDictData.vendor_list,t);'
+    's&&(this.selectIndex===16?I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=vendor_slot16 VALUE="${s}"`)'
+    ':I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=vendor_slot${this.selectIndex} VALUE="${s}"`))}'
+)
+# The touchscreen stores vendor only through the filament ID, so a vendor change selects a matching filament.
+SELECTED_VENDOR_PATCHED = (
+    'set selectedVendor(t){const q=this.tltgCatalog;if(q){const c=q.find(x=>x.name===this.selectedFilament),'
+    'f=q.filter(x=>x.vendor===t),m=c&&f.find(x=>x.type===c.type)||f[0];'
+    'm&&m.name!==this.selectedFilament&&this.tltgSaveFilament(m.id);return}'
+    + SELECTED_VENDOR_STOCK.removeprefix('set selectedVendor(t){')
+)
+SELECTED_FILAMENT_STOCK = (
+    'set selectedFilament(t){for(const s in this.officialFilasListDictData)s.startsWith("fila")'
+    '&&this.officialFilasListDictData[s].filament===t&&(this.selectIndex===16'
+    '?I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=filament_slot16 VALUE="${s.replace("fila","")}"`)'
+    ':I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=filament_slot${this.selectIndex} VALUE="${s.replace("fila","")}"`))}'
+)
+SELECTED_FILAMENT_PATCHED = (
+    'set selectedFilament(t){const q=this.tltgCatalog;if(q){const v=this.selectedVendor,'
+    'm=q.find(x=>x.name===t&&x.vendor===v)||q.find(x=>x.name===t);m&&this.tltgSaveFilament(m.id);return}'
+    + SELECTED_FILAMENT_STOCK.removeprefix('set selectedFilament(t){')
+)
+SELECTED_COLOR_STOCK = (
+    'set selectedColor(t){const s=this.getKeyByValue(this.officialFilasListDictData.colordict,t);'
+    's&&(this.selectIndex===16?I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=color_slot16 VALUE="${s}"`)'
+    ':I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=color_slot${this.selectIndex} VALUE="${s}"`))}'
+)
+SELECTED_COLOR_PATCHED = (
+    'set selectedColor(t){if(this.tltgCatalog&&typeof t=="string"&&/^#[0-9A-Fa-f]{6}$/.test(t)){'
+    'I.printerGcodeScript(`SAVE_VARIABLE VARIABLE=color_slot${this.selectIndex} VALUE="[\'${t.slice(1).toUpperCase()}\']"`);return}'
+    + SELECTED_COLOR_STOCK.removeprefix('set selectedColor(t){')
+)
+
+
 class FluiddBundleError(InstallerError):
     pass
 
 
+def _steps() -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+    # (stock, current patch, superseded patches this release replaces)
+    return (
+        (SLOT_PARSE_STOCK, SLOT_PARSE_PATCHED, ()),
+        (VARIABLES_RETURN_STOCK, VARIABLES_RETURN_PATCHED, ()),
+        (SOCKET_NOTIFY_STOCK, SOCKET_NOTIFY_PATCHED, ()),
+        (FILAS_LIST_STOCK, _filas_list_patched(), (_filas_list_patched_v1(),)),
+        (FILAMENT_ITEMS_STOCK, FILAMENT_ITEMS_PATCHED, ()),
+        (VENDOR_ITEMS_STOCK, VENDOR_ITEMS_PATCHED, ()),
+        (SELECTED_VENDOR_STOCK, SELECTED_VENDOR_PATCHED, ()),
+        (SELECTED_FILAMENT_STOCK, SELECTED_FILAMENT_PATCHED, ()),
+        (SELECTED_COLOR_STOCK, SELECTED_COLOR_PATCHED, ()),
+    )
+
+
 @lru_cache(maxsize=4)
 def patch_fluidd_bundle(text: str) -> str:
-    replacements = ((SLOT_PARSE_STOCK, SLOT_PARSE_PATCHED), (FILAS_LIST_STOCK, _filas_list_patched()))
-    stock_counts = [text.count(stock) for stock, _patched in replacements]
-    patched_counts = [text.count(patched) for _stock, patched in replacements]
-    if stock_counts == [0, 0] and patched_counts == [1, 1] and text.count(PATCH_MARKER) == 1:
-        return text
-    if stock_counts != [1, 1] or patched_counts != [0, 0] or PATCH_MARKER in text:
+    edits = []
+    for stock, patched, superseded in _steps():
+        current = text.count(patched)
+        # Some patches keep their stock span as a suffix; those matches are not unpatched source.
+        counts = {old: text.count(old) - (current if old in patched else 0) for old in (stock, *superseded)}
+        present = [old for old, count in counts.items() if count]
+        if current == 1 and not present:
+            continue
+        if current == 0 and len(present) == 1 and counts[present[0]] == 1:
+            edits.append((present[0], patched))
+            continue
         raise FluiddBundleError("Fluidd bundle does not match the reviewed QIDI box source; preserving it.")
-    for stock, patched in replacements:
-        text = text.replace(stock, patched, 1)
+    for old, patched in edits:
+        text = text.replace(old, patched, 1)
     return text

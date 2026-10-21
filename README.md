@@ -59,11 +59,17 @@ Manual 3MF metadata rescans use the archive extractor and keep existing QIDI thu
 
 Unrecognized source is preserved and reported. Uninstall can restore the original source through its system-restoration prompt; files modified after installation are preserved.
 
-### QIDI Box filament names and colors in Fluidd
+### QIDI Box filaments in Fluidd
 
-QIDI firmware `01.01.07.01` saves Box filaments with new IDs such as `QFA90` and stores colors as RGB values, but its bundled Fluidd still expects the older numeric IDs. Without a fix, loaded slots show `?` and an empty spool.
+QIDI firmware `01.01.07.01` stores Box filaments with new IDs such as `QFA90`, colors as RGB values, and brands such as Bambu, HATCHBOX, Overture, and Polymaker through the filament itself. Its bundled Fluidd still expects the older numeric IDs: loaded slots show `?`, and filaments chosen in Fluidd are treated by the printer as QIDI PLA Basic.
 
-Install and update patch QIDI's Fluidd so Box slots show the filament name and color, including when optional OS optimizations are skipped. Slots set before the firmware update keep displaying as before. Fluidd's filament and color pickers are unchanged. Reload Fluidd in the browser after installing; a hard refresh may be needed if the browser cached the old page.
+Install and update patch QIDI's Fluidd, including when optional OS optimizations are skipped:
+
+- Box slots show the filament, vendor, and color the printer is actually using. A slot set with an older numeric ID shows QIDI PLA Basic, because that is how `01.01.07.01` treats it; pick the filament again to fix it.
+- The Vendor and Filament pickers match the touchscreen: choose a vendor, then one of its filaments. Changing the vendor switches to that vendor's filament of the same type when one exists.
+- Colors chosen in Fluidd are saved the same way as on the touchscreen.
+
+Older supported firmware keeps Fluidd's original pickers. Reload Fluidd in the browser after installing; a hard refresh may be needed if the browser cached the old page.
 
 A Fluidd build the installer does not recognize is left unchanged. Uninstall can restore the original Fluidd through its system-restoration prompt; files modified after installation are preserved.
 
