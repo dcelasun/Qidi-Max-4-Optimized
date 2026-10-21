@@ -1,5 +1,10 @@
 # Changelog
 
+## 26.10.20.2
+- On firmware `01.01.07.01`, Fluidd's QIDI Box card now shows the filament, vendor, and color the printer is actually using for each slot. That firmware treats filaments chosen with the older numeric IDs, including those set in Fluidd before this release, as QIDI PLA Basic with its temperatures; such slots now show QIDI PLA Basic so they can be corrected.
+- Fluidd's Box Vendor and Filament pickers now match the touchscreen on `01.01.07.01`: they list QIDI, Generic, Bambu, HATCHBOX, Overture, and Polymaker filaments from the firmware's filament list and save them the way the touchscreen does. Changing the vendor selects that vendor's filament of the same type when one exists, and colors are saved in the touchscreen's format. Older firmware keeps Fluidd's original pickers.
+- Updates replace the `26.10.20.1` Fluidd patch in place; uninstall still restores the original Fluidd file. Reload Fluidd in the browser after installing.
+
 ## 26.10.20.1
 - Fixed QIDI Box slots in Fluidd showing `?` and an empty spool on firmware `01.01.07.01`. That firmware saves filaments with new IDs such as `QFA90` and colors as RGB values, which QIDI's bundled Fluidd could not read. Install and update now patch the recognized Fluidd build so Box slots show the filament name and color, including when optional OS optimizations are skipped. Slots set before the firmware update display as before, and Fluidd's filament and color pickers are unchanged. Reload Fluidd in the browser after installing.
 - Unrecognized Fluidd builds are left unchanged without blocking other install steps. Uninstall can restore the original Fluidd file; files modified after installation are preserved.
