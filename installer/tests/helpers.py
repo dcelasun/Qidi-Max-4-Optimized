@@ -80,7 +80,11 @@ def build_env(printer_data_root: Path, *, moonraker_url: str) -> dict[str, str]:
 
 
 def fake_system_root(
-    *, include_moonraker_cache: bool = False, include_fluidd_bundle: bool = False, include_filament_config: bool = False
+    *,
+    include_moonraker_cache: bool = False,
+    include_fluidd_bundle: bool = False,
+    include_filament_config: bool = False,
+    include_klipper_box_config: bool = False,
 ) -> Path:
     root = temp_path("system-optimization-flow-")
     (root / "etc/resolvconf/resolv.conf.d").mkdir(parents=True)
@@ -107,6 +111,10 @@ def fake_system_root(
         fluidd = root / "home/qidi/fluidd/assets/index-DlFvHGAh.js"
         fluidd.parent.mkdir(parents=True)
         shutil.copyfile(REPO_ROOT / "installer/tests/fixtures/fluidd_box_variables.js", fluidd)
+    if include_klipper_box_config:
+        box_config = root / "home/qidi/klipper/klippy/extras/box_config.py"
+        box_config.parent.mkdir(parents=True)
+        box_config.write_bytes((REPO_ROOT / "installer/tests/fixtures/klipper_box_config.py").read_bytes().replace(b"\n", b"\r\n"))
     if include_filament_config:
         filaments = root / "home/qidi/QIDI_Client/resource/filament_config/filament-0.4.json"
         filaments.parent.mkdir(parents=True)

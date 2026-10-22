@@ -31,9 +31,9 @@ If you'd rather do a dry-run before committing to a full install, you can run th
 
 ### Optional THR accelerometer firmware fix
 
-On QIDI firmware `01.01.07.01`, the interactive installer asks whether to flash the THR toolhead board's LIS2DW FIFO bug fix. **The default is No**: press Enter to leave firmware unchanged. Answering yes checks the actual application and bootloader hashes; a board that already has the fix is verified without another reset or flash. **After flashing THR, rerun input shaper calibration before printing.** The installer does not run calibration.
+On QIDI firmware `01.01.07.01`, the interactive installer asks early, before changing any configuration, whether to flash the THR toolhead board's LIS2DW FIFO bug fix. **The default is No**: press Enter to leave firmware unchanged. Answering yes flashes after the configuration install finishes. The installer checks the actual application and bootloader hashes; a board that already has the fix is verified without another reset or flash. **After flashing THR, rerun input shaper calibration before printing.** The installer clears the saved input shaper calibration from `printer.cfg`, so input shaping stays off until you recalibrate; the previous `printer.cfg` is kept with the THR recovery files. The installer does not run calibration.
 
-Flashing requires an idle, ready printer with every heater target at zero. Keep printer power on until verification completes. The installer preserves stock recovery files under `~/printer_data/.tltg_thr_firmware_backups/`, flashes only THR, and verifies the complete application and unchanged bootloader before restoring services. Physical recovery through the RESET pads is not verified; see [THR-only operations](firmware/FLASHING.md) for recovery requirements.
+Flashing requires an idle, ready printer with every heater target at zero. Keep printer power on until verification completes. The installer preserves stock recovery files under `~/printer_data/.tltg_thr_firmware_backups/`, flashes only THR, and verifies the complete application and unchanged bootloader before restoring services. See [THR-only operations](firmware/FLASHING.md) for recovery requirements.
 
 `--yes` alone and automatic updates never authorize firmware programming. To opt in explicitly from the command line, use `~/tltg-optimized-macros/install.sh --flash-thr-fifo`; add `--dry-run` for a preview without serial access or service changes. Configuration restore and uninstall do not revert MCU firmware.
 
@@ -94,23 +94,7 @@ Firmware updates replace these files, so keep a copy of any entries you add. Fil
 
 ### QIDI Box temperature from Fluidd
 
-The installer adds `TLTG_SET_BOX_TEMP`, a macro for setting the QIDI Box heater target because Qidi's Fluidd config is incapable of setting `heater_box1` correctly.
-
-Use:
-
-```gcode
-TLTG_SET_BOX_TEMP BOX=1 TARGET=45
-```
-
-Use `TARGET=0` to turn the box heater off:
-
-```gcode
-TLTG_SET_BOX_TEMP BOX=1 TARGET=0
-```
-
-The macro appears in Fluidd's Macros panel after install and Klipper restart. If the panel is not visible, edit the Fluidd layout and enable the Macros panel.
-
-![Fluidd TLTG_SET_BOX_TEMP macro](.github/images/fluidd-tltg-set-box-temp-macro.png)
+Set a QIDI Box heater target from the `Heater Box1`/`Heater Box2` rows in Fluidd's temperature panel. The highest target allowed is the lowest Box temperature limit among the filaments loaded in that Box; an empty Box allows up to 65 °C, the Box's advertised maximum. If a loaded filament does not allow Box heating, the target field is locked; a Box that is already heating can still be set to `0`.
 
 ### Helpful Klipper tools
 

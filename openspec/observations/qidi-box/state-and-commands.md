@@ -100,6 +100,12 @@ rfid_state
 
 `heater_generic heater_boxN.target` is authoritative for heater target. Captures showed `target=45` while both vendor drying-state surfaces reported `dry_state=0`.
 
+Stock Fluidd cannot set a nonzero Box heater target on `01.01.07.01`:
+
+- **Runtime-confirmed:** `configfile.settings` omits `heater_generic heater_boxN` because `box_config.py` builds generated sections with a private access-tracking map. Fluidd's target validation then compares against undefined minimum and maximum values, so only `0` is submitted. Sharing Klipper's tracking map for the generated heater published `min_temp -100`, `max_temp 100`, and `target_max_temp 90` without configuration warnings.
+- **Runtime-confirmed:** QIDI's `SET_HEATER_TEMPERATURE` enforces `target_min_temp` and `target_max_temp` only for `heater_generic chamber`. `SET_HEATER_TEMPERATURE HEATER=heater_box2 TARGET=70` was accepted with `target_max_temp 65`; Box heater targets are bounded only by `max_temp`.
+- **Config-confirmed:** Fluidd's `getMinMaxTempOfBox` limits Box `N` to the lowest `box_max_temp` among loaded filaments, but selects slots with `u/4===N-1`, so only the first slot of each Box is considered. `officiall_filas_list.cfg` and the `01.01.07.01` filament database give `box_max_temp` `0` for PLA, TPU, PEBA, and some other filaments, which Fluidd reports as `Max 0`.
+
 The observed `mcu_box1` reported firmware `02.03.01.21`, MCU `stm32f401xc`, clock `84000000`, and both-edge stepping enabled.
 
 ## `BOX_PRINT_START`
@@ -207,7 +213,6 @@ An already-matching sync or already-clear runout capture produced no delta; that
 ```text
 ENABLE_BOX_DRY DISABLE_BOX_DRY DISABLE_BOX_HEATER BOX_TEMP_SET
 MULTI_COLOR_DRY MULTI_COLOR_DISABLE_HEATER MULTI_COLOR_SET_TEMP
-TLTG_SET_BOX_TEMP
 ```
 
 ### Toolhead/extruder motion

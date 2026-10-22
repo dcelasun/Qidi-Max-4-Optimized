@@ -15,6 +15,7 @@ from installer.runtime.cli import main, parse_args, resolve_runtime_paths
 from installer.runtime.reporter import create_reporter
 from installer.runtime.safety import THR_RECOVERY_MARKER, ensure_no_recovery_sentinel
 from installer.runtime.errors import InstallerError
+from installer.runtime.models import InstallResult
 from installer.tests.helpers import REPO_ROOT, build_env, copy_base_runtime, temp_path
 from scripts import flash_thr_firmware as protocol
 from scripts.build_thr_firmware import patch_thr
@@ -109,7 +110,8 @@ class ThrFirmwareFlowTests(unittest.TestCase):
         manifest['thr']['patched_sha256'] = hashlib.sha256(image).hexdigest()
         (bundle / 'firmware/max4-thr-lis2dw-fifo-v1.json').write_text(json.dumps(manifest))
         data = root / 'printer_data'
-        data.mkdir()
+        (data / 'config').mkdir(parents=True)
+        shutil.copy2(REPO_ROOT / 'config/printer.cfg', data / 'config/printer.cfg')
         (data / 'firmware_manifest.json').write_text('{"SOC":{"version":"01.01.07.01"}}')
         python = root / 'klippy-env/bin/python'
         python.parent.mkdir(parents=True)
@@ -129,19 +131,17 @@ class ThrFirmwareFlowTests(unittest.TestCase):
 
     def test_interactive_authorization_defaults_to_no_and_never_enrolls_updates(self):
         paths, printer, reporter = self.fixture()
+        def confirm(**kwargs):
+            return thr_firmware.confirm_thr_firmware(paths=paths, reporter=reporter, **kwargs)
         for answer in ('', '\n', 'n\n', 'no\n', 'unexpected\n'):
-            with self.subTest(answer=answer), patch.object(thr_firmware, 'flash_thr_firmware', side_effect=AssertionError('Not authorized')):
-                thr_firmware.maybe_flash_thr_firmware(paths=paths, reporter=reporter, input_stream=io.StringIO(answer))
-        for env, stream in (({}, None), ({LOCK_HELD_ENV: '1'}, io.StringIO('yes\n'))):
-            with patch.object(thr_firmware, 'flash_thr_firmware', side_effect=AssertionError('Unattended flash')):
-                thr_firmware.maybe_flash_thr_firmware(paths=paths, reporter=reporter, input_stream=stream, environ=env)
+            with self.subTest(answer=answer):
+                self.assertFalse(confirm(input_stream=io.StringIO(answer)))
+        self.assertFalse(confirm(input_stream=None))
+        self.assertFalse(confirm(input_stream=io.StringIO('yes\n'), environ={LOCK_HELD_ENV: '1'}))
         for answer in ('y\n', 'YES\n'):
-            with self.subTest(answer=answer), patch.object(thr_firmware, 'flash_thr_firmware') as flash:
-                thr_firmware.maybe_flash_thr_firmware(paths=paths, reporter=reporter, input_stream=io.StringIO(answer))
-                flash.assert_called_once()
-        with patch.object(thr_firmware, 'flash_thr_firmware') as flash:
-            thr_firmware.maybe_flash_thr_firmware(paths=paths, reporter=reporter, explicit=True)
-            flash.assert_called_once()
+            with self.subTest(answer=answer):
+                self.assertTrue(confirm(input_stream=io.StringIO(answer)))
+        self.assertTrue(confirm(explicit=True))
         self.assertFalse((paths.printer_data_root / THR_RECOVERY_MARKER).exists())
         self.assertIn('input shaper calibration', reporter.stream.getvalue())
 
@@ -162,6 +162,10 @@ class ThrFirmwareFlowTests(unittest.TestCase):
                     self.assertTrue(evidence['verified'])
                     self.assertEqual(evidence['application_sha256'], printer.manifest['thr']['patched_sha256'])
                     self.assertEqual((directories[0] / 'before/bootloader.bin').read_bytes(), printer.boot)
+                    printer_cfg = (paths.config_root / 'printer.cfg').read_text()
+                    self.assertEqual('#*# shaper_freq_x' in printer_cfg, patched)
+                    self.assertIn('#*# [input_shaper]', printer_cfg)
+                    self.assertEqual((directories[0] / 'printer.cfg').is_file(), not patched)
                     if not patched:
                         self.assertEqual((directories[0] / 'before/application.bin').read_bytes(), printer.stock)
                         self.execute(paths, printer, reporter)
@@ -198,6 +202,7 @@ class ThrFirmwareFlowTests(unittest.TestCase):
                 self.assertTrue((paths.printer_data_root / THR_RECOVERY_MARKER).is_file())
                 self.assertTrue(all(state == 'inactive' for state in printer.states.values()))
                 self.assertEqual(config.read_text(), 'verified configuration')
+                self.assertIn('#*# shaper_freq_x', (paths.config_root / 'printer.cfg').read_text())
                 with self.assertRaises(InstallerError):
                     ensure_no_recovery_sentinel(paths.recovery_sentinel_path)
                 output = io.StringIO()
@@ -209,14 +214,13 @@ class ThrFirmwareFlowTests(unittest.TestCase):
         def forbidden(*args, **kwargs):
             raise AssertionError('Preview or admission accessed services/UART')
         thr_firmware.flash_thr_firmware(paths=paths, reporter=reporter, dry_run=True, run=forbidden, urlopen=printer.urlopen)
-        self.assertEqual(list(paths.printer_data_root.iterdir()), [paths.firmware_manifest_path])
+        self.assertEqual(sorted(paths.printer_data_root.iterdir()), [paths.config_root, paths.firmware_manifest_path])
         with self.assertRaises(thr_firmware.ThrFirmwareError):
             thr_firmware.flash_thr_firmware(paths=paths, reporter=reporter, environ={LOCK_HELD_ENV: '1'}, run=forbidden)
         paths.firmware_manifest_path.write_text('{"SOC":{"version":"01.01.06.05"}}')
         with self.assertRaises(thr_firmware.ThrFirmwareError):
             thr_firmware.flash_thr_firmware(paths=paths, reporter=reporter, run=forbidden)
-        with patch.object(thr_firmware, 'flash_thr_firmware', side_effect=forbidden):
-            thr_firmware.maybe_flash_thr_firmware(paths=paths, reporter=reporter, input_stream=io.StringIO('yes\n'))
+        self.assertFalse(thr_firmware.confirm_thr_firmware(paths=paths, reporter=reporter, input_stream=io.StringIO('yes\n')))
 
     def test_cli_opt_in_is_install_only_and_yes_alone_does_not_authorize(self):
         self.assertFalse(parse_args(['install', '--yes']).flash_thr_fifo)
@@ -226,11 +230,17 @@ class ThrFirmwareFlowTests(unittest.TestCase):
                 parse_args([*argv, '--flash-thr-fifo'])
         root = copy_base_runtime()
         env = build_env(root, moonraker_url='http://printer.invalid')
-        with patch('installer.runtime.cli.run_install'), patch.object(thr_firmware, 'flash_thr_firmware', side_effect=AssertionError('Unexpected firmware access')):
+        def install(paths, manifest, reporter, *, flash_thr_fifo, dry_run, input_stream, environ, **kwargs):
+            opted_in = thr_firmware.confirm_thr_firmware(
+                paths=paths, reporter=reporter, explicit=flash_thr_fifo,
+                dry_run=dry_run, input_stream=input_stream, environ=environ,
+            )
+            return InstallResult((), (), 'label', None, flash_thr_firmware=opted_in)
+        with patch('installer.runtime.cli.run_install', side_effect=install), patch('installer.runtime.cli.flash_thr_firmware', side_effect=AssertionError('Unexpected firmware access')):
             self.assertEqual(main(['install', '--yes', '--plain'], bundle_root=REPO_ROOT, environ=env, stream=io.StringIO()), 0)
         (root / 'firmware_manifest.json').write_text('{"SOC":{"version":"01.01.07.01"}}')
         for flags, answer, expected in ((['--yes'], '', False), ([], '\n', False), ([], 'yes\n', True), (['--yes', '--flash-thr-fifo'], '', True)):
-            with self.subTest(flags=flags, answer=answer), patch('installer.runtime.cli.run_install'), patch.object(thr_firmware, 'flash_thr_firmware') as flash:
+            with self.subTest(flags=flags, answer=answer), patch('installer.runtime.cli.run_install', side_effect=install), patch('installer.runtime.cli.flash_thr_firmware') as flash:
                 self.assertEqual(main(['install', '--plain', *flags], bundle_root=REPO_ROOT, environ=env, stream=io.StringIO(), input_stream=io.StringIO(answer)), 0)
                 self.assertEqual(flash.called, expected)
         with patch('installer.runtime.cli.run_install', side_effect=AssertionError('Child mutated configuration')):

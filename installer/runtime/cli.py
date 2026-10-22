@@ -43,7 +43,7 @@ from .system_optimizations import (
     verify_rockchip_postflight,
 )
 from .uninstall import run_uninstall
-from .thr_firmware import maybe_flash_thr_firmware, validate_thr_firmware_request
+from .thr_firmware import flash_thr_firmware, validate_thr_firmware_request
 
 DEFAULT_PRINTER_DATA_ROOT = Path("/home/qidi/printer_data")
 DEFAULT_FIRMWARE_MANIFEST = Path("/home/qidi/update/firmware_manifest.json")
@@ -335,7 +335,7 @@ def main(
                     environ=env,
                 )
             if args.mode == "install":
-                run_install(
+                result = run_install(
                     paths,
                     manifest,
                     reporter,
@@ -343,11 +343,13 @@ def main(
                     input_stream=input_stream,
                     environ=env,
                     system_options=_system_options_from_args(args),
+                    flash_thr_fifo=args.flash_thr_fifo,
                 )
-                maybe_flash_thr_firmware(
-                    paths=paths, reporter=reporter, explicit=args.flash_thr_fifo,
-                    dry_run=args.dry_run, input_stream=input_stream, environ=env,
-                )
+                if result.flash_thr_firmware:
+                    flash_thr_firmware(
+                        paths=paths, reporter=reporter, dry_run=args.dry_run,
+                        input_stream=input_stream, environ=env,
+                    )
             else:
                 run_uninstall(
                     paths,

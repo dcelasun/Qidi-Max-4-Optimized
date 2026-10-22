@@ -17,6 +17,7 @@ from typing import Any, Callable
 from . import messages
 from . import fluidd_filament_config as filament_config
 from .fluidd_box_filaments import OPERATION as FLUIDD_BOX_OPERATION, patch_fluidd_bundle
+from .klipper_box_config import OPERATION as KLIPPER_BOX_OPERATION, patch_box_config
 from .fluidd_filament_config import OPERATION as FILAMENT_CONFIG_OPERATION
 from .moonraker_file_manager import OPERATION as MOONRAKER_CACHE_OPERATION, patch_file_manager
 from .auto_update import current_auto_update_checksum
@@ -95,6 +96,14 @@ GUARDED_FILE_PATCHES = {
         file=lambda spec: spec.fluidd_box_filament_ids.file,
         patch=patch_fluidd_bundle,
         restart_service=None,
+        missing_message=None,
+        skip_unrecognized=True,
+    ),
+    KLIPPER_BOX_OPERATION: _GuardedFilePatch(
+        label="Klipper box_config.py",
+        file=lambda spec: spec.klipper_box_config.file,
+        patch=patch_box_config,
+        restart_service="klipper.service",
         missing_message=None,
         skip_unrecognized=True,
     ),
@@ -305,7 +314,7 @@ def maybe_emit_system_dry_run(
                 if _guarded_file_has_drift(operation_id, spec, root, prior.get("restore_preimages", {}), prior.get("outcomes", {})):
                     reporter.line(f"  - would preserve modified {guarded.label}")
                 elif _operation_needs_apply(operation_id, spec=spec, root=root, run=run):
-                    restart = " and restart Moonraker" if guarded.restart_service == "moonraker.service" else ""
+                    restart = {"moonraker.service": " and restart Moonraker", "klipper.service": " and restart Klipper"}.get(guarded.restart_service or "", "")
                     reporter.line(f"  - would apply {operation_id}{restart}")
                 else:
                     target = _map_path(root, guarded.file(spec))
@@ -2050,7 +2059,7 @@ def _path_has_symlink_component(path: Path, *, root: Path) -> bool:
 
 
 def _selected_operation_ids(spec: SystemOptimizationsSpec, policy: dict[str, Any]) -> tuple[str, ...]:
-    ids = [MOONRAKER_METADATA_OPERATION, MOONRAKER_CACHE_OPERATION, FLUIDD_BOX_OPERATION, FILAMENT_CONFIG_OPERATION]
+    ids = [MOONRAKER_METADATA_OPERATION, MOONRAKER_CACHE_OPERATION, FLUIDD_BOX_OPERATION, KLIPPER_BOX_OPERATION, FILAMENT_CONFIG_OPERATION]
     if policy.get("system_optimizations") != "enabled":
         return tuple(ids)
     ids.extend(["dns", "apt_sources", "qidiclient_static_gifs"])
@@ -2096,6 +2105,8 @@ def _desired(operation_id: str, spec: SystemOptimizationsSpec) -> dict[str, Any]
         return {"path": spec.moonraker_file_manager.file, "restart_service": spec.moonraker_file_manager.restart_service}
     if operation_id == FLUIDD_BOX_OPERATION:
         return {"path": spec.fluidd_box_filament_ids.file}
+    if operation_id == KLIPPER_BOX_OPERATION:
+        return {"path": spec.klipper_box_config.file, "restart_service": spec.klipper_box_config.restart_service}
     if operation_id == FILAMENT_CONFIG_OPERATION:
         return {"path": spec.fluidd_filament_config.link, "target": spec.fluidd_filament_config.target}
     if operation_id == MOONRAKER_METADATA_OPERATION:
@@ -2547,6 +2558,7 @@ def _host_operation_ids(spec: SystemOptimizationsSpec) -> frozenset[str]:
             MOONRAKER_METADATA_OPERATION,
             MOONRAKER_CACHE_OPERATION,
             FLUIDD_BOX_OPERATION,
+            KLIPPER_BOX_OPERATION,
             FILAMENT_CONFIG_OPERATION,
             ROCKCHIP_ROOT_SYNC_OPERATION,
             *(f"service_{service}" for service in spec.services.disable),

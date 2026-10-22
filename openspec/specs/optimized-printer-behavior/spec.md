@@ -235,7 +235,7 @@ Optimized cut, purge, cooldown, cleaning, calibration, and cancel helpers SHALL 
 
 #### Scenario: Operator helpers remain guarded and available
 - **WHEN** optimized macros load
-- **THEN** supported bed-screw, probe-accuracy, Box-temperature, mapping-reset, and startup reporting helpers are available
+- **THEN** supported bed-screw, probe-accuracy, mapping-reset, and startup reporting helpers are available
 - **AND** each helper validates required printer state and hardware bounds before acting
 
 ### Requirement: Firmware and vendor compatibility surfaces
