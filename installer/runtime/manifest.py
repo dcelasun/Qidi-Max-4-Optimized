@@ -341,6 +341,7 @@ def _parse_system_optimizations(raw: dict[str, Any]) -> SystemOptimizationsSpec 
     moonraker_metadata_raw = _require_mapping(system_raw, "moonraker_metadata_3mf")
     moonraker_file_manager_raw = _require_mapping(system_raw, "moonraker_file_manager")
     fluidd_box_raw = _require_mapping(system_raw, "fluidd_box_filament_ids")
+    klipper_box_raw = _require_mapping(system_raw, "klipper_box_config")
     filament_config_raw = _require_mapping(system_raw, "fluidd_filament_config")
     rockchip_raw = _require_mapping(system_raw, "rockchip_root_sync")
     optional_raw = services_raw.get("optional_disable", [])
@@ -392,6 +393,10 @@ def _parse_system_optimizations(raw: dict[str, Any]) -> SystemOptimizationsSpec 
         ),
         fluidd_box_filament_ids=SystemFluiddBundleSpec(
             file=_validate_absolute_path(_require_str(fluidd_box_raw, "file")),
+        ),
+        klipper_box_config=SystemMoonrakerMetadata3mfSpec(
+            file=_validate_absolute_path(_require_str(klipper_box_raw, "file")),
+            restart_service=_require_str(klipper_box_raw, "restart_service"),
         ),
         fluidd_filament_config=SystemFluiddFilamentConfigSpec(
             link=_validate_filament_config_link(_require_str(filament_config_raw, "link")),

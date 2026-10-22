@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+from . import messages
 from .auto_update import LOCK_HELD_ENV
 from .errors import InstallerError
 from .firmware import detect_firmware_version
@@ -24,10 +25,8 @@ class ThrFirmwareError(InstallerError):
 
 
 WARNING = (
-    "THR firmware opt-in: this erases and rewrites only the toolhead application. "
-    "After flashing THR, you must rerun input shaper calibration before printing. "
-    "Do not interrupt printer power. Physical RESET-pad recovery is not verified; "
-    "configuration restore/uninstall cannot undo MCU firmware."
+    "THR firmware: do not power off the printer until this finishes. "
+    "Rerun input shaper calibration before printing."
 )
 
 
@@ -41,6 +40,38 @@ def _query(paths, names, urlopen):
     if status["webhooks"]["state"] != "ready" or status["idle_timeout"]["state"] not in {"Ready", "Idle"}:
         raise ThrFirmwareError("THR firmware requires Klipper ready and idle.")
     return status
+
+
+def strip_input_shaper_calibration(text):
+    header = text.find("\n#*# <---------------------- SAVE_CONFIG ---------------------->")
+    if header < 0:
+        return text
+    lines = text[header:].splitlines(keepends=True)
+    kept, in_section = [], False
+    for line in lines:
+        content = line[4:].strip() if line.startswith("#*# ") else None
+        if content and content.startswith("["):
+            in_section = content == "[input_shaper]"
+        elif in_section and content:
+            continue
+        kept.append(line)
+    return text[:header] + "".join(kept)
+
+
+def _clear_input_shaper_calibration(paths, directory, reporter):
+    printer_cfg = paths.config_root / "printer.cfg"
+    try:
+        ensure_runtime_path_has_no_symlink_components(printer_data_root=paths.printer_data_root, target=printer_cfg)
+        text = printer_cfg.read_text()
+        cleared = strip_input_shaper_calibration(text)
+        if cleared == text:
+            return
+        atomic_write_text(directory / "printer.cfg", text, mode=0o600)
+        atomic_write_text(printer_cfg, cleared)
+    except (OSError, InstallerError):
+        reporter.line("Could not clear the saved input shaper calibration from printer.cfg; rerun input shaper calibration to replace it.")
+        return
+    reporter.line("Cleared the saved input shaper calibration from printer.cfg; input shaping stays off until you recalibrate.")
 
 
 def check_thr_printer_ready(paths, *, urlopen=urllib.request.urlopen):
@@ -67,27 +98,14 @@ def check_thr_printer_ready(paths, *, urlopen=urllib.request.urlopen):
         raise ThrFirmwareError("Could not verify idle/ready state and all heater targets for THR firmware.") from exc
 
 
-def maybe_flash_thr_firmware(*, paths, reporter, explicit=False, dry_run=False, input_stream=None, environ=None):
+def confirm_thr_firmware(*, paths, reporter, explicit=False, dry_run=False, input_stream=None, environ=None):
     env = {} if environ is None else environ
-    if env.get(LOCK_HELD_ENV) == "1":
-        if explicit:
-            validate_thr_firmware_request(paths=paths, environ=env)
-        return
-    if not explicit:
-        if dry_run or input_stream is None:
-            return
-        if detect_firmware_version(paths.firmware_manifest_path) != "01.01.07.01":
-            return
-        reporter.emit_prompt(
-            question="Flash the THR accelerometer FIFO bug fix?",
-            instruction="Default: No. Type y or yes to opt in; Enter skips. Existing firmware will be checked and an already-installed fix will not be flashed again. " + WARNING,
-        )
-        if input_stream.readline().strip().lower() not in {"y", "yes"}:
-            return
-    return flash_thr_firmware(
-        paths=paths, reporter=reporter, dry_run=dry_run,
-        input_stream=input_stream, environ=env,
-    )
+    if explicit or dry_run or input_stream is None or env.get(LOCK_HELD_ENV) == "1":
+        return explicit
+    if detect_firmware_version(paths.firmware_manifest_path) != "01.01.07.01":
+        return False
+    reporter.emit_prompt(question=messages.THR_FIRMWARE_PROMPT, instruction=messages.THR_FIRMWARE_PROMPT_INSTRUCTION)
+    return input_stream.readline().strip().upper() in {"Y", "YES"}
 
 
 def validate_thr_firmware_request(*, paths, environ):
@@ -193,11 +211,15 @@ def flash_thr_firmware(
             evidence = protocol.verify_readback(image, after, manifest)
         atomic_write_text(directory / "verification.json", json.dumps(evidence, indent=2) + "\n", mode=0o600)
         verified = True
+        if firmware_may_have_changed:
+            _clear_input_shaper_calibration(paths, directory, reporter)
     except Exception as exc:
         raise ThrFirmwareError("THR firmware operation failed; configuration installation is retained. Recovery files: " + str(directory) + ". " + str(exc)) from exc
     finally:
         if verified or not firmware_may_have_changed:
             try:
+                if states.get("klipper.service") == "active":
+                    reporter.line(messages.KLIPPER_SERVICE_RESTARTING)
                 for service in protocol.SERVICES:
                     if states.get(service) == "active":
                         service_action("start", service)

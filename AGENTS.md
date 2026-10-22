@@ -4,8 +4,9 @@
 
 - Never modify `config/fluidd.cfg`; it is read-only on the printer. Implement related behavior elsewhere.
 - Preserve machine/vendor behavior unless explicitly asked to change it. Compare against `https://github.com/thelegendtubaguy/Qidi-Max4-Defaults`.
+- QIDI no longer maintains its bundled Fluidd, so its behavior and UI may be changed as needed. Deliver Fluidd changes as guarded installer patches of the shipped bundle (`installer/runtime/fluidd_box_filaments.py`).
 - Never add, restore, or commit unredacted hardware identifiers. Treat `config/MCU_ID.cfg` and `config/box.cfg` as sensitive.
-- Keep `config/` stock-mapped except for redactions, approved comment translation, generated state blocks, and minimal include wiring. Do not tune `config/printer.cfg` or stock-mapped `config/klipper-macros-qd/*.cfg`; put stock-value changes in guarded `installer/package.yaml patches.*`, Klipper behavior in `installer/klipper/tltg-optimized-macros/`, slicer behavior in `orcaslicer_gcode/` and `qidistudio_gcode/`, and installer/runtime metadata under `installer/`. Call out unavoidable stock-mapped edits before making them and keep them minimal.
+- Keep `config/` stock-mapped except for redactions, approved comment translation, generated state blocks, and minimal include wiring. Do not tune `config/printer.cfg` or stock-mapped `config/klipper-macros-qd/*.cfg`; put stock-value changes in guarded `installer/package.yaml patches.*` (or, when the value lives in a QIDI-generated file whose sections vary, such as `config/box.cfg`, in a guarded host-file patch under `installer/runtime/`), Klipper behavior in `installer/klipper/tltg-optimized-macros/`, slicer behavior in `orcaslicer_gcode/` and `qidistudio_gcode/`, and installer/runtime metadata under `installer/`. Call out unavoidable stock-mapped edits before making them and keep them minimal.
 - Translate comments only unless explicitly told otherwise. Leave runtime/status/warning strings unchanged unless the affected string set is approved.
 - Keep `README.md` operator-focused; do not link internal `openspec/` agent references unless explicitly requested.
 - `kevin@koconnor.net` is permitted only in upstream Klipper GPL copyright headers.
@@ -28,6 +29,7 @@ Read as applicable:
 - Installer lifecycle: `openspec/specs/installer-lifecycle/spec.md`
 - Printer behavior: `openspec/specs/optimized-printer-behavior/spec.md`
 - Start path: `openspec/contracts/gcode-paths/start-print.path.json` and `openspec/contracts/gcode-paths/generated/start-print.md`
+- THR firmware: `openspec/specs/firmware-artifacts/spec.md` and `openspec/specs/thr-firmware-transfer/spec.md`
 - QIDI platform: `openspec/observations/qidi-platform.md`
 - QIDI Box: `openspec/observations/qidi-box/{topology-and-control,state-and-commands,hardware-and-protocols,material-metadata,evidence-and-open-questions}.md`
 
@@ -70,6 +72,8 @@ Include changed generated `.md` and `.mmd` files. If a concrete command change l
 - `installer/package.yaml` or `installer/supported_upgrade_sources.yaml`: `python3 scripts/check_installer_known_versions.py`
 - Slicer G-code: `python3 scripts/check_optimized_slicer_macros.py`
 - Installer behavior: `python3 scripts/run_installer_core_tests.py`
+- THR firmware generator or patch manifest: `scripts/check_thr_firmware.py` against a fresh `scripts/build_thr_firmware.py` build (setup in `firmware/README.md`)
+- THR flashing tool or protocol: `scripts/check_thr_flashing.py`, with `--bootloader-backup` when available (see `firmware/FLASHING.md`)
 - Launcher, bundle, or release plumbing: `python3 scripts/build_installer_bundle.py --output-dir dist --channel dev --build-id local --smoke-test`
 - OpenSpec: `openspec validate --all --strict`
 - Start-print behavior or contract paths: follow **Start-print changes**.

@@ -255,6 +255,7 @@ class SystemOptimizationsSpec:
     moonraker_metadata_3mf: SystemMoonrakerMetadata3mfSpec
     moonraker_file_manager: SystemMoonrakerMetadata3mfSpec
     fluidd_box_filament_ids: SystemFluiddBundleSpec
+    klipper_box_config: SystemMoonrakerMetadata3mfSpec
     fluidd_filament_config: SystemFluiddFilamentConfigSpec
     rockchip_root_sync: SystemRockchipRootSyncSpec
 
@@ -479,6 +480,7 @@ class InstallResult:
     backup_label: str
     backup_zip_path: Optional[Path]
     dry_run: bool = False
+    flash_thr_firmware: bool = False
 
 
 @dataclass(frozen=True)
