@@ -3,6 +3,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import urllib.request
+from dataclasses import replace
 
 from . import klipper_cfg, messages, patches
 from .auto_update import (
@@ -86,11 +87,11 @@ from .system_optimizations import (
     validate_legacy_system_ledger,
     validate_system_ledger,
 )
+from .thr_firmware import confirm_thr_firmware
 
 
 
 def _replace_legacy_system_ledger(state, ledger):
-    from dataclasses import replace
     return replace(state, system_ledger=ledger)
 
 
@@ -105,6 +106,7 @@ def run_install(
     disk_usage=shutil.disk_usage,
     environ: dict[str, str] | None = None,
     system_options: SystemOptimizationCliOptions | None = None,
+    flash_thr_fifo: bool = False,
     run=None,
 ) -> InstallResult:
     run = subprocess.run if run is None else run
@@ -195,6 +197,14 @@ def run_install(
             )
         except (CompatibilityValidationError, SourcePatchError) as exc:
             raise PreviousPackageValidationError() from exc
+    flash_thr_firmware = confirm_thr_firmware(
+        paths=paths,
+        reporter=reporter,
+        explicit=flash_thr_fifo,
+        dry_run=dry_run,
+        input_stream=input_stream,
+        environ=env,
+    )
     source_results = tuple(
         classify_install_source_patch(paths=paths, patch=patch, firmware=detected_firmware, prior_state=prior_state)
         for patch in manifest.install.source_patches
@@ -270,6 +280,7 @@ def run_install(
             backup_label=plan.backup_label,
             backup_zip_path=None,
             dry_run=True,
+            flash_thr_firmware=flash_thr_firmware,
         )
         reporter.emit_install_dry_run(plan=plan)
         maybe_emit_system_dry_run(
@@ -284,7 +295,7 @@ def run_install(
         reporter.debug(event="install.complete", dry_run=True, backup_label=plan.backup_label)
         return result
 
-    return _execute_install(
+    result = _execute_install(
         paths=paths,
         manifest=manifest,
         reporter=reporter,
@@ -301,6 +312,7 @@ def run_install(
         config_changes=config_changes,
         run=run,
     )
+    return replace(result, flash_thr_firmware=flash_thr_firmware)
 
 
 

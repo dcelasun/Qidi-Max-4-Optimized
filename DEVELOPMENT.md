@@ -91,6 +91,10 @@ If you changed `installer/klipper/tltg-optimized-macros/`, run the formatter bef
 python3 scripts/format_klipper_configs.py
 ```
 
+## THR firmware package
+
+Generate and verify the Max 4 LIS2DW FIFO fix using the commands in [`firmware/README.md`](firmware/README.md). Firmware artifacts are separate from the macro installer bundle; the build and checks do not flash a printer.
+
 ## Runtime override hooks
 
 `installer/runtime/cli.py` accepts these environment overrides:

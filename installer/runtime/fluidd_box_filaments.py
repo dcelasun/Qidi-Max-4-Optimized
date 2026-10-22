@@ -214,6 +214,33 @@ SELECTED_COLOR_PATCHED = (
     + SELECTED_COLOR_STOCK.removeprefix('set selectedColor(t){')
 )
 
+BOX_TEMP_LIMIT_STOCK = (
+    'getMinMaxTempOfBox:(r,e)=>t=>{const s=e.getVariables,n=s.slot.reduce((l,c,u)=>(c===1&&u/4===t-1&&l.push(u),l),[]);'
+    'if(n.length===0)return-1;const i=s.filamentSlot.filter((l,c)=>n.includes(c)),a=r.officiallFilasList;if(!a)return-2;'
+    'const o=i.map(l=>{var c;return(c=a["fila"+l])==null?void 0:c.box_max_temp});return Math.min(...o)}'
+)
+# Every loaded slot of the Box limits its heater, including a filament limit of 0; filaments without a limit are skipped.
+BOX_TEMP_LIMIT_PATCHED = (
+    'getMinMaxTempOfBox:(r,e)=>t=>{const s=e.getVariables,n=s.slot.reduce((l,c,u)=>(c===1&&Math.floor(u/4)===t-1&&l.push(u),l),[]);'
+    'if(n.length===0)return-1;const i=s.filamentSlot.filter((l,c)=>n.includes(c)),a=r.officiallFilasList;if(!a)return-2;'
+    'const o=i.map(l=>{var c;return parseFloat((c=a["fila"+l])==null?void 0:c.box_max_temp)}).filter(l=>!isNaN(l));'
+    'return o.length?Math.min(...o):-1}'
+)
+HEATER_TARGET_STOCK = (
+    'attrs:{value:s.target,rules:[e.$rules.required,e.$rules.numberValid,'
+    'e.$rules.numberGreaterThanOrEqualOrZero(s.targetMinTemp?Math.max(s.targetMinTemp,s.minTemp):s.minTemp),'
+    'e.$rules.numberLessThanOrEqualOrZero(s.targetMaxTemp!==void 0&&s.targetMaxTemp!==null?Math.min(s.targetMaxTemp,s.maxTemp):s.maxTemp)],'
+    'type:"number",outlined:"",dense:"","single-line":"","hide-details":"auto",suffix:"°C"}'
+)
+# A Box whose loaded filament allows no heating locks its target input; an active target can still be set to 0.
+HEATER_TARGET_PATCHED = (
+    HEATER_TARGET_STOCK.removesuffix('}') + ',disabled:s.key.includes("heater_box")&&s.targetMaxTemp===0&&!s.target}'
+)
+
+FULL_DISPLAY_DEFAULT_STOCK = 'enableDiagnostics:!1,enableFullDisplay:!1,thumbnailSize:32'
+# QIDI's "Enable Full Display" setting defaults on; a value saved in Moonraker's database still overrides it.
+FULL_DISPLAY_DEFAULT_PATCHED = 'enableDiagnostics:!1,enableFullDisplay:!0,thumbnailSize:32'
+
 
 class FluiddBundleError(InstallerError):
     pass
@@ -231,6 +258,9 @@ def _steps() -> tuple[tuple[str, str, tuple[str, ...]], ...]:
         (SELECTED_VENDOR_STOCK, SELECTED_VENDOR_PATCHED, ()),
         (SELECTED_FILAMENT_STOCK, SELECTED_FILAMENT_PATCHED, ()),
         (SELECTED_COLOR_STOCK, SELECTED_COLOR_PATCHED, ()),
+        (BOX_TEMP_LIMIT_STOCK, BOX_TEMP_LIMIT_PATCHED, ()),
+        (HEATER_TARGET_STOCK, HEATER_TARGET_PATCHED, ()),
+        (FULL_DISPLAY_DEFAULT_STOCK, FULL_DISPLAY_DEFAULT_PATCHED, ()),
     )
 
 

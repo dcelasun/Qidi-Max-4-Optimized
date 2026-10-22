@@ -14,6 +14,7 @@ from installer.runtime import system_optimizations
 from installer.runtime import fluidd_box_filaments as fluidd_patch
 from installer.runtime.fluidd_box_filaments import OPERATION as FLUIDD_BOX_OPERATION, PATCH_MARKER
 from installer.runtime.fluidd_filament_config import OPERATION as FILAMENT_CONFIG_OPERATION
+from installer.runtime.klipper_box_config import OPERATION as KLIPPER_BOX_OPERATION
 from installer.runtime.cli import resolve_runtime_paths
 from installer.runtime.compatibility import load_supported_upgrade_sources
 from installer.runtime.errors import InstalledPackageValidationError
@@ -48,7 +49,9 @@ from installer.tests.helpers import (
 class SystemOptimizationFlowTests(unittest.TestCase):
     def test_system_optimization_dry_run_install_and_uninstall_lifecycle(self):
         printer_root = copy_base_runtime()
-        system_root = fake_system_root(include_moonraker_cache=True, include_fluidd_bundle=True, include_filament_config=True)
+        system_root = fake_system_root(
+            include_moonraker_cache=True, include_fluidd_bundle=True, include_filament_config=True, include_klipper_box_config=True
+        )
         host_run = fake_host_run(system_root)
         moonraker = system_root / "home/qidi/moonraker/moonraker/components/file_manager/file_manager.py"
         moonraker.write_bytes(moonraker.read_bytes().replace(b"\n", b"\r\n"))
@@ -56,6 +59,8 @@ class SystemOptimizationFlowTests(unittest.TestCase):
         moonraker.chmod(0o640)
         fluidd = system_root / "home/qidi/fluidd/assets/index-DlFvHGAh.js"
         fluidd_before = fluidd.read_bytes()
+        box_config = system_root / "home/qidi/klipper/klippy/extras/box_config.py"
+        box_config_before = box_config.read_bytes()
         before = snapshot_tree(system_root)
         env = build_env(printer_root, moonraker_url="http://moonraker.invalid")
         env[SYSTEM_ROOT_ENV] = str(system_root)
@@ -130,6 +135,11 @@ class SystemOptimizationFlowTests(unittest.TestCase):
         self.assertEqual(moonraker.stat().st_mode & 0o777, 0o640)
         self.assertIn(FLUIDD_BOX_OPERATION, state.system_ledger["restore_preimages"])
         self.assertIn(PATCH_MARKER.encode(), fluidd.read_bytes())
+        self.assertIn(b"Math.floor(u/4)===t-1", fluidd.read_bytes())
+        self.assertIn(b"enableFullDisplay:!0", fluidd.read_bytes())
+        self.assertIn(KLIPPER_BOX_OPERATION, state.system_ledger["restore_preimages"])
+        self.assertIn(b"config.access_tracking if module == 'heater_generic'", box_config.read_bytes())
+        self.assertNotIn(b"\n", box_config.read_bytes().replace(b"\r\n", b""))
         filament_config = manifest.system_optimizations.fluidd_filament_config
         filament_link = printer_root / filament_config.link
         self.assertEqual(os.readlink(filament_link), filament_config.target)
@@ -179,6 +189,7 @@ class SystemOptimizationFlowTests(unittest.TestCase):
         self.assertEqual(moonraker.read_bytes(), moonraker_before)
         self.assertEqual(moonraker.stat().st_mode & 0o777, 0o640)
         self.assertEqual(fluidd.read_bytes(), fluidd_before)
+        self.assertEqual(box_config.read_bytes(), box_config_before)
         self.assertFalse(filament_link.is_symlink())
 
     def test_unreviewed_fluidd_bundle_is_preserved_without_blocking_other_patches(self):

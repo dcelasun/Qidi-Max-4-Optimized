@@ -7,13 +7,23 @@ import urllib.request
 from pathlib import Path
 from typing import Callable
 
-from .errors import ActivePrintError, FreeSpaceError, PrinterStateError, RecoveryRequiredError
+from .errors import ActivePrintError, FreeSpaceError, InstallerError, PrinterStateError, RecoveryRequiredError
 
 DiskUsageFn = Callable[[Path], object]
 UrlOpenFn = Callable[..., object]
 
 
+THR_RECOVERY_MARKER = ".tltg_thr_firmware_pending.json"
+
+
+def ensure_no_pending_thr_firmware(path: Path) -> None:
+    marker = path.parent / THR_RECOVERY_MARKER
+    if marker.exists() or marker.is_symlink():
+        raise InstallerError("Unresolved THR firmware operation; recover and verify the board before continuing: " + str(marker))
+
+
 def ensure_no_recovery_sentinel(path: Path) -> None:
+    ensure_no_pending_thr_firmware(path)
     if path.exists():
         raise RecoveryRequiredError()
 

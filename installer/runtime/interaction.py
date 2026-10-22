@@ -81,6 +81,7 @@ def maybe_restart_pending_service(
         if hasattr(reporter, "debug"):
             reporter.debug(event="klipper.process_restart.declined")
         return False
+    reporter.line(messages.KLIPPER_SERVICE_RESTARTING)
     try:
         restart_pending(paths, allowed_entries=allowed_entries, urlopen=urlopen)
     except ProcessRestartError as exc:

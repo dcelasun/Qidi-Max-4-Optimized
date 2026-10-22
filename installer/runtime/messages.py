@@ -33,6 +33,9 @@ HOST_REBOOT_POSTFLIGHT_FAILED = "Host reboot completed, but Rockchip postflight 
 HOST_REBOOT_CURRENT_STATE_FAILED = "Host reboot remains pending because the Rockchip repair no longer passes postflight verification."
 HOST_REBOOT_VERIFIED = "Host reboot and Rockchip repair verified."
 
+THR_FIRMWARE_PROMPT = "Would you like to flash the THR accelerometer FIFO bug fix?"
+THR_FIRMWARE_PROMPT_INSTRUCTION = "Type Y/YES to flash the toolhead board after installation, or N/NO to skip. Rerun input shaper calibration afterward; uninstall cannot undo this."
+
 AUTO_UPDATE_PROMPT = "Would you like to enable hourly automatic updates for the TLTG configs?"
 AUTO_UPDATE_PROMPT_INSTRUCTION = "Type Y/YES to enable auto-updates, or N/NO to skip. The installer will try QIDI's public default sudo password, then ask for yours if that fails."
 AUTO_UPDATE_NOT_ENABLED = "Auto-updates not enabled."
@@ -80,6 +83,7 @@ KLIPPER_SERVICE_RESTART_PROMPT_INSTRUCTION = "Type Y/YES to restart and verify K
 KLIPPER_SERVICE_RESTART_PENDING = "Klipper service restart remains required to activate managed Python source."
 KLIPPER_SERVICE_RESTART_DEFERRED_ACTIVE_PRINT = "Klipper service restart remains pending because a print is active or paused."
 KLIPPER_SERVICE_RESTART_DEFERRED_UNKNOWN_STATE = "Klipper service restart remains pending because printer state could not be verified."
+KLIPPER_SERVICE_RESTARTING = "Restarting the Klipper service. Please wait..."
 KLIPPER_SERVICE_RESTARTED = "Klipper service process restarted and verified."
 KLIPPER_SERVICE_RESTART_FAILED = "Klipper service restart could not be verified. The activation marker remains; restart Klipper service manually, then retry the installer."
 

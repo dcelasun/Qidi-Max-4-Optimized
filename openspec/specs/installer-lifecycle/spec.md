@@ -222,6 +222,39 @@ Normal install and update SHALL patch the recognized QIDI Fluidd bundle so its Q
 - **AND** a bundle carrying an earlier package patch is updated in place while the first restore preimage is retained
 - **AND** accepted uninstall restoration reverts only the unchanged installed bundle; concurrent changes and operator drift are preserved
 
+### Requirement: QIDI Box heater targets from Fluidd
+Normal install and update SHALL patch recognized QIDI Klipper `box_config.py` and the recognized QIDI Fluidd bundle so Fluidd's temperature panel sets QIDI Box heater targets within the Box heater and loaded-filament limits, independently of optional OS optimization policy, retaining original files and preserving unrecognized or operator-modified files.
+
+#### Scenario: Box heater limits reach Fluidd
+- **WHEN** Klipper loads the patched `box_config.py`
+- **THEN** `configfile.settings` includes each generated `heater_generic heater_boxN` section with its configured temperature limits
+- **AND** its `target_max_temp` is the lower of the `box.cfg` value and 65 °C, the Box's advertised maximum
+- **AND** other generated Box objects are unchanged
+
+#### Scenario: Loaded filaments limit Box heating
+- **WHEN** filament is loaded in any slot of a Box
+- **THEN** Fluidd accepts targets up to the lowest Box limit declared by that Box's loaded filaments, including a limit of `0`
+- **AND** loaded filaments without a declared limit do not restrict the target, and a Box without restricting filaments accepts targets up to its heater's `target_max_temp`
+
+#### Scenario: Filaments that disallow heating lock the target
+- **WHEN** a Box's effective limit is `0`
+- **THEN** its target input is disabled
+- **AND** a Box with an active nonzero target remains editable so it can be set to `0`
+
+#### Scenario: Box heater deployment remains reversible
+- **WHEN** a recognized `box_config.py` requires the patch
+- **THEN** the installer backs up the original bytes, preserves line endings, replaces the file atomically, and restarts the Klipper service
+- **AND** accepted uninstall restoration reverts only the unchanged installed file and restarts the Klipper service; concurrent changes and operator drift are preserved
+- **AND** a missing or unrecognized `box_config.py` is left unchanged and the outcome is recorded without failing other host patches
+
+### Requirement: Fluidd full display by default
+Normal install and update SHALL patch the recognized QIDI Fluidd bundle so QIDI's "Enable Full Display" setting defaults on, independently of optional OS optimization policy, with the same recognition, preservation, and restoration as the QIDI Box filament display patch.
+
+#### Scenario: Full display is on unless the operator turned it off
+- **WHEN** Fluidd loads settings that do not include a saved "Enable Full Display" value
+- **THEN** full display is enabled, showing the bed mesh card on the Tune page and target-less temperature sensors in the temperature panel and chart
+- **AND** a value saved from Fluidd's settings, including off, still applies
+
 ### Requirement: QIDI filament database in Fluidd
 Normal install and update SHALL expose QIDI's touchscreen filament database directory as `config/qidi_filament_config` in Fluidd's configuration files, independently of optional OS optimization policy, without copying, backing up, or modifying the database files.
 
@@ -266,3 +299,38 @@ Automatic updates SHALL require durable operator enrollment, use the same admiss
 - **AND** successful setup records enrollment outside firmware-cleaned configuration
 - **AND** disable or uninstall removes enrollment before privileged timer cleanup so a surviving service cannot install or reconcile
 - **AND** plumbing failure is reported separately from successful configuration or uninstall work
+
+### Requirement: THR firmware programming requires per-run opt-in
+The installer SHALL ask supported interactive installations whether to flash the THR FIFO fix after preflight and before configuration changes, defaulting to No. An explicit yes or install-only CLI option SHALL authorize only that invocation. `--yes` alone, unattended updates, restore, and uninstall MUST NOT program MCU firmware or persist permission to do so.
+
+#### Scenario: Firmware option is absent
+- **WHEN** the operator declines, submits an empty answer, reaches end of input, or runs unattended without the explicit firmware option
+- **THEN** no THR serial session, firmware backup, reset, or programming occurs
+
+#### Scenario: Firmware option is explicitly selected
+- **WHEN** an operator explicitly accepts the interactive question or selects the install-only THR firmware option
+- **THEN** the installer explains the firmware/recovery risk and performs the operation under the installer lock after configuration installation and required activation
+- **AND** the interactive question and README warn that input shaper calibration must be rerun after flashing; the installer does not initiate calibration
+- **AND** after a verified transfer, and before Klipper restarts, the saved `SAVE_CONFIG` input shaper values are cleared while an empty `[input_shaper]` section remains, with the prior `printer.cfg` retained in the recovery files; an already-patched board keeps its calibration
+- **AND** dry-run reports the proposed firmware work without service changes, serial access, or firmware backup creation
+
+### Requirement: Optional THR transfer is admitted and byte-verified
+The optional operation SHALL require supported firmware, idle ready state, zero heater targets, exclusive service ownership, and exact known THR application/bootloader identities. It MUST preserve stock recovery files before erase and verify the complete resulting application and unchanged bootloader before success.
+
+#### Scenario: Known stock or patched application is detected
+- **WHEN** safe preconditions hold and readback matches an admitted image
+- **THEN** stock firmware receives only the pinned THR patch with retained recovery files
+- **AND** an already-patched board is verified without another erase or transfer
+- **AND** only previously active services are restored and printer readiness is checked
+
+#### Scenario: Klipper is still restarting
+- **WHEN** the operation starts while Klipper is restarting or Moonraker cannot yet report its state
+- **THEN** the installer waits for Klipper to become ready before admission, allowing at least 60 seconds
+- **AND** an active or paused print or a nonzero heater target fails admission without waiting
+- **AND** if Klipper does not become ready in time, no service is stopped and no THR serial session or programming occurs
+
+#### Scenario: Admission fails or firmware work is interrupted
+- **WHEN** firmware admission fails or firmware work does not reach verified readback
+- **THEN** no unknown image is programmed and verified configuration installation is preserved
+- **AND** potentially changed or unverified firmware retains recovery evidence, stopped serial-owning services, and a durable blocker against later installer operations
+- **AND** configuration restore and uninstall never claim to revert MCU firmware

@@ -43,6 +43,7 @@ from .system_optimizations import (
     verify_rockchip_postflight,
 )
 from .uninstall import run_uninstall
+from .thr_firmware import flash_thr_firmware, validate_thr_firmware_request
 
 DEFAULT_PRINTER_DATA_ROOT = Path("/home/qidi/printer_data")
 DEFAULT_FIRMWARE_MANIFEST = Path("/home/qidi/update/firmware_manifest.json")
@@ -102,6 +103,10 @@ def main(
                 action="demo-tui",
             )
             return 0
+
+        safety.ensure_no_pending_thr_firmware(paths.recovery_sentinel_path)
+        if args.flash_thr_fifo:
+            validate_thr_firmware_request(paths=paths, environ=env)
 
         if args.mode == "complete-host-reboot":
             with acquire(paths.lock_path):
@@ -248,6 +253,7 @@ def main(
                     lock_path=paths.lock_path,
                 )
                 manifest = load_manifest(paths.installer_root / "package.yaml")
+                safety.ensure_no_pending_thr_firmware(paths.recovery_sentinel_path)
                 removed = clear_recovery_sentinel(
                     paths.recovery_sentinel_path,
                     printer_data_root=paths.printer_data_root,
@@ -281,6 +287,7 @@ def main(
                     mode=args.mode,
                     lock_path=paths.lock_path,
                 )
+                safety.ensure_no_pending_thr_firmware(paths.recovery_sentinel_path)
                 rc = run_restore_helper(
                     paths,
                     manifest,
@@ -328,7 +335,7 @@ def main(
                     environ=env,
                 )
             if args.mode == "install":
-                run_install(
+                result = run_install(
                     paths,
                     manifest,
                     reporter,
@@ -336,7 +343,13 @@ def main(
                     input_stream=input_stream,
                     environ=env,
                     system_options=_system_options_from_args(args),
+                    flash_thr_fifo=args.flash_thr_fifo,
                 )
+                if result.flash_thr_firmware:
+                    flash_thr_firmware(
+                        paths=paths, reporter=reporter, dry_run=args.dry_run,
+                        input_stream=input_stream, environ=env,
+                    )
             else:
                 run_uninstall(
                     paths,
@@ -498,6 +511,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--demo-tui", action="store_true", help="Render a demo of the install/uninstall TUI without writing changes.")
     parser.add_argument("--backup", help="Backup label or path to restore with restore-backup mode.")
     parser.add_argument("--yes", action="store_true", help="Run non-interactively using default yes-mode choices.")
+    parser.add_argument("--flash-thr-fifo", action="store_true", help="Explicitly opt in to the Max 4 01.01.07.01 THR FIFO firmware fix; requires idle/ready state, zero heater targets, and verified readback. Not enabled by --yes or automatic updates.")
     parser.add_argument("--skip-system-optimizations", action="store_true", help="Skip DNS, APT, qidiclient GIF, Rockchip root-mount, VPN, Bluetooth, and AI service changes.")
     parser.add_argument("--disable-ai-detection", action="store_true", help="Disable the QIDI AI detection backend service when system optimizations run.")
     parser.add_argument("--keep-ai-detection", action="store_true", help="Keep the QIDI AI detection backend service enabled when system optimizations run.")
@@ -547,6 +561,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("system optimization flags are only supported with install and uninstall.")
     if args.keep_system_optimizations and args.mode != "uninstall":
         parser.error("--keep-system-optimizations is only supported with uninstall.")
+    if args.flash_thr_fifo and args.mode != "install":
+        parser.error("--flash-thr-fifo is only supported with install.")
     if args.reboot_host and args.mode not in {"install", "uninstall"}:
         parser.error("--reboot-host is only supported with install and uninstall.")
     return args
