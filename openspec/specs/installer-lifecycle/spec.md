@@ -315,6 +315,12 @@ The optional operation SHALL require supported firmware, idle ready state, zero 
 - **AND** an already-patched board is verified without another erase or transfer
 - **AND** only previously active services are restored and printer readiness is checked
 
+#### Scenario: Klipper is still restarting
+- **WHEN** the operation starts while Klipper is restarting or Moonraker cannot yet report its state
+- **THEN** the installer waits for Klipper to become ready before admission, allowing at least 60 seconds
+- **AND** an active or paused print or a nonzero heater target fails admission without waiting
+- **AND** if Klipper does not become ready in time, no service is stopped and no THR serial session or programming occurs
+
 #### Scenario: Admission fails or firmware work is interrupted
 - **WHEN** firmware admission fails or firmware work does not reach verified readback
 - **THEN** no unknown image is programmed and verified configuration installation is preserved
