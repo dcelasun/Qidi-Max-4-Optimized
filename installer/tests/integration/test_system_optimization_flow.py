@@ -136,6 +136,7 @@ class SystemOptimizationFlowTests(unittest.TestCase):
         self.assertIn(FLUIDD_BOX_OPERATION, state.system_ledger["restore_preimages"])
         self.assertIn(PATCH_MARKER.encode(), fluidd.read_bytes())
         self.assertIn(b"Math.floor(u/4)===t-1", fluidd.read_bytes())
+        self.assertIn(b"enableFullDisplay:!0", fluidd.read_bytes())
         self.assertIn(KLIPPER_BOX_OPERATION, state.system_ledger["restore_preimages"])
         self.assertIn(b"config.access_tracking if module == 'heater_generic'", box_config.read_bytes())
         self.assertNotIn(b"\n", box_config.read_bytes().replace(b"\r\n", b""))

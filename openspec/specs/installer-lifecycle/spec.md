@@ -247,6 +247,14 @@ Normal install and update SHALL patch recognized QIDI Klipper `box_config.py` an
 - **AND** accepted uninstall restoration reverts only the unchanged installed file and restarts the Klipper service; concurrent changes and operator drift are preserved
 - **AND** a missing or unrecognized `box_config.py` is left unchanged and the outcome is recorded without failing other host patches
 
+### Requirement: Fluidd full display by default
+Normal install and update SHALL patch the recognized QIDI Fluidd bundle so QIDI's "Enable Full Display" setting defaults on, independently of optional OS optimization policy, with the same recognition, preservation, and restoration as the QIDI Box filament display patch.
+
+#### Scenario: Full display is on unless the operator turned it off
+- **WHEN** Fluidd loads settings that do not include a saved "Enable Full Display" value
+- **THEN** full display is enabled, showing the bed mesh card on the Tune page and target-less temperature sensors in the temperature panel and chart
+- **AND** a value saved from Fluidd's settings, including off, still applies
+
 ### Requirement: QIDI filament database in Fluidd
 Normal install and update SHALL expose QIDI's touchscreen filament database directory as `config/qidi_filament_config` in Fluidd's configuration files, independently of optional OS optimization policy, without copying, backing up, or modifying the database files.
 

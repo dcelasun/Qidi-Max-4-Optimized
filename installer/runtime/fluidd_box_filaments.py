@@ -237,6 +237,10 @@ HEATER_TARGET_PATCHED = (
     HEATER_TARGET_STOCK.removesuffix('}') + ',disabled:s.key.includes("heater_box")&&s.targetMaxTemp===0&&!s.target}'
 )
 
+FULL_DISPLAY_DEFAULT_STOCK = 'enableDiagnostics:!1,enableFullDisplay:!1,thumbnailSize:32'
+# QIDI's "Enable Full Display" setting defaults on; a value saved in Moonraker's database still overrides it.
+FULL_DISPLAY_DEFAULT_PATCHED = 'enableDiagnostics:!1,enableFullDisplay:!0,thumbnailSize:32'
+
 
 class FluiddBundleError(InstallerError):
     pass
@@ -256,6 +260,7 @@ def _steps() -> tuple[tuple[str, str, tuple[str, ...]], ...]:
         (SELECTED_COLOR_STOCK, SELECTED_COLOR_PATCHED, ()),
         (BOX_TEMP_LIMIT_STOCK, BOX_TEMP_LIMIT_PATCHED, ()),
         (HEATER_TARGET_STOCK, HEATER_TARGET_PATCHED, ()),
+        (FULL_DISPLAY_DEFAULT_STOCK, FULL_DISPLAY_DEFAULT_PATCHED, ()),
     )
 
 
