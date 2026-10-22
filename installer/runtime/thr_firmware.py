@@ -24,6 +24,13 @@ class ThrFirmwareError(InstallerError):
     pass
 
 
+class ThrPrinterNotReady(ThrFirmwareError):
+    pass
+
+
+READY_TIMEOUT_SECONDS = 120
+
+
 WARNING = (
     "THR firmware: do not power off the printer until this finishes. "
     "Rerun input shaper calibration before printing."
@@ -38,7 +45,7 @@ def _query(paths, names, urlopen):
     if status["print_stats"]["state"] not in {"standby", "complete", "cancelled", "error"}:
         raise ThrFirmwareError("THR firmware requires an idle printer.")
     if status["webhooks"]["state"] != "ready" or status["idle_timeout"]["state"] not in {"Ready", "Idle"}:
-        raise ThrFirmwareError("THR firmware requires Klipper ready and idle.")
+        raise ThrPrinterNotReady("THR firmware requires Klipper ready and idle.")
     return status
 
 
@@ -95,7 +102,22 @@ def check_thr_printer_ready(paths, *, urlopen=urllib.request.urlopen):
     except ThrFirmwareError:
         raise
     except (OSError, ValueError, KeyError, TypeError) as exc:
-        raise ThrFirmwareError("Could not verify idle/ready state and all heater targets for THR firmware.") from exc
+        raise ThrPrinterNotReady("Could not verify idle/ready state and all heater targets for THR firmware.") from exc
+
+
+def wait_for_thr_printer_ready(paths, *, urlopen, sleep, clock, reporter=None):
+    deadline = clock() + READY_TIMEOUT_SECONDS
+    waiting = False
+    while True:
+        try:
+            return check_thr_printer_ready(paths, urlopen=urlopen)
+        except ThrPrinterNotReady:
+            if clock() >= deadline:
+                raise
+            if reporter is not None and not waiting:
+                reporter.line("Waiting for Klipper to be ready before THR firmware...")
+            waiting = True
+            sleep(1)
 
 
 def confirm_thr_firmware(*, paths, reporter, explicit=False, dry_run=False, input_stream=None, environ=None):
@@ -128,7 +150,7 @@ def flash_thr_firmware(
     if paths.restart_marker_path.exists():
         raise ThrFirmwareError("Complete pending Klipper source activation before THR firmware programming.")
     reporter.line(WARNING)
-    check_thr_printer_ready(paths, urlopen=urlopen)
+    wait_for_thr_printer_ready(paths, urlopen=urlopen, sleep=sleep, clock=clock, reporter=reporter)
     if dry_run:
         reporter.line("THR firmware dry-run: would back up and admit THR, skip an already-patched image, or flash and verify the FIFO fix. No UART or services accessed.")
         return
@@ -154,7 +176,7 @@ def flash_thr_firmware(
             raise ThrFirmwareError("Cannot establish serial service ownership: " + service)
         states[service] = values["ActiveState"]
     password = authenticate_sudo(run=run, environ=env, reporter=reporter, input_stream=input_stream)
-    check_thr_printer_ready(paths, urlopen=urlopen)
+    wait_for_thr_printer_ready(paths, urlopen=urlopen, sleep=sleep, clock=clock, reporter=reporter)
     backup_root.mkdir(mode=0o700, exist_ok=True)
     directory = Path(tempfile.mkdtemp(prefix="thr-", dir=backup_root))
     fsync_directory(backup_root)
@@ -224,15 +246,7 @@ def flash_thr_firmware(
                     if states.get(service) == "active":
                         service_action("start", service)
                 if states.get("klipper.service") == "active":
-                    deadline = clock() + 65
-                    while True:
-                        try:
-                            check_thr_printer_ready(paths, urlopen=urlopen)
-                            break
-                        except ThrFirmwareError:
-                            if clock() >= deadline:
-                                raise
-                            sleep(1)
+                    wait_for_thr_printer_ready(paths, urlopen=urlopen, sleep=sleep, clock=clock)
                 atomic_delete(marker)
             except BaseException as exc:
                 raise ThrFirmwareError("THR service restoration/readiness is incomplete; recovery marker retained: " + str(marker)) from exc

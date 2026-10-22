@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import io
+import itertools
 import json
 import shutil
 import subprocess
@@ -36,9 +37,13 @@ class Printer:
         self.snapshots = 0
         self.state = 'standby'
         self.idle_state = 'Ready'
+        self.restarting_queries = 0
         self.targets = {'extruder': 0, 'heater_bed': 0, 'heater_generic chamber': 0, 'heater_generic extra': 0}
 
     def urlopen(self, *args, **kwargs):
+        if self.restarting_queries:
+            self.restarting_queries -= 1
+            raise OSError('Klippy not connected')
         status = {'print_stats': {'state': self.state}, 'webhooks': {'state': 'ready'},
                   'idle_timeout': {'state': self.idle_state}, 'heaters': {'available_heaters': list(self.targets)}}
         status.update({name: {'target': value} for name, value in self.targets.items()})
@@ -126,7 +131,7 @@ class ThrFirmwareFlowTests(unittest.TestCase):
         with patch.object(protocol, 'BOOT_SHA256', hashlib.sha256(printer.boot).hexdigest()):
             return thr_firmware.flash_thr_firmware(
                 paths=paths, reporter=reporter, run=printer.run, urlopen=printer.urlopen,
-                sleep=lambda seconds: None, **kwargs,
+                sleep=lambda seconds: None, clock=itertools.count(0, 10).__next__, **kwargs,
             )
 
     def test_interactive_authorization_defaults_to_no_and_never_enrolls_updates(self):
@@ -152,6 +157,7 @@ class ThrFirmwareFlowTests(unittest.TestCase):
                     paths, printer, reporter = self.fixture(patched=patched, timer=timer)
                     if not timer:
                         printer.idle_state = 'Idle'
+                    printer.restarting_queries = 3
                     self.execute(paths, printer, reporter)
                     self.assertEqual(printer.transfers, 0 if patched else 1)
                     self.assertEqual(printer.states, printer.original)
@@ -173,7 +179,7 @@ class ThrFirmwareFlowTests(unittest.TestCase):
                         self.assertEqual(printer.states, printer.original)
 
     def test_unsafe_preconditions_and_unknown_images_never_program(self):
-        for case in ('printing', 'paused', 'unknown-state', 'chamber-hot', 'extra-heater-hot', 'malformed-target', 'unknown-app', 'unknown-boot'):
+        for case in ('printing', 'paused', 'unknown-state', 'chamber-hot', 'extra-heater-hot', 'malformed-target', 'unknown-app', 'unknown-boot', 'never-ready'):
             with self.subTest(case=case):
                 paths, printer, reporter = self.fixture(failure=case)
                 if case in ('printing', 'paused', 'unknown-state'):
@@ -182,6 +188,8 @@ class ThrFirmwareFlowTests(unittest.TestCase):
                     printer.targets['heater_generic chamber'] = 60
                 if case == 'extra-heater-hot':
                     printer.targets['heater_generic extra'] = 40
+                if case == 'never-ready':
+                    printer.restarting_queries = 1000
                 if case == 'malformed-target':
                     printer.targets['extruder'] = False
                 with self.assertRaises(thr_firmware.ThrFirmwareError):
