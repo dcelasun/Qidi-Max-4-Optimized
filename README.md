@@ -96,6 +96,10 @@ Firmware updates replace these files, so keep a copy of any entries you add. Fil
 
 Set a QIDI Box heater target from the `Heater Box1`/`Heater Box2` rows in Fluidd's temperature panel. The highest target allowed is the lowest Box temperature limit among the filaments loaded in that Box; an empty Box allows up to 65 °C, the Box's advertised maximum. If a loaded filament does not allow Box heating, the target field is locked; a Box that is already heating can still be set to `0`.
 
+### Fluidd full display
+
+Install and update turn on QIDI's **Enable Full Display** setting in Fluidd by default. It shows the bed mesh card on the Tune page and adds sensors without a target temperature, such as the chamber thermal protection and electronics sensors, to the temperature panel and chart. Turning it off in Fluidd's settings is remembered across updates.
+
 ### Helpful Klipper tools
 
 After install and Klipper restart, the optimized macro set includes:
